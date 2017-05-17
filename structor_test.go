@@ -1,4 +1,4 @@
-package structor
+package structor_test
 
 import (
 	"bytes"
@@ -8,6 +8,8 @@ import (
 	"text/template"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/nikolay-turpitko/structor"
 )
 
 // TestSimple tests simple structor usage: string fields, data from context,
@@ -28,7 +30,7 @@ func TestSimple(t *testing.T) {
 		D: "init D",
 	}
 	extra := struct{ X string }{"extra field X"}
-	ev := NewDefaultEvaluator(template.FuncMap{
+	ev := structor.NewDefaultEvaluator(template.FuncMap{
 		"printMap": func(m map[string]string) string {
 			keys := []string{}
 			for k := range m {
@@ -78,7 +80,7 @@ func TestObj(t *testing.T) {
 		K inner
 	}
 	v := &obj{F: &innerSub{}}
-	ev := NewDefaultEvaluator(template.FuncMap{
+	ev := structor.NewDefaultEvaluator(template.FuncMap{
 		"add": func(a, b int) int { return a + b },
 	})
 	err := ev.Eval(v, nil)
@@ -98,7 +100,7 @@ func TestObj(t *testing.T) {
 
 // TestError tests structor's error handling.
 func TestError(t *testing.T) {
-	ev := NewDefaultEvaluator(nil)
+	ev := structor.NewDefaultEvaluator(nil)
 
 	// Error for wrong type.
 	err := ev.Eval(42, nil)
@@ -113,7 +115,7 @@ func TestError(t *testing.T) {
 	v := &errStruct{}
 	err = ev.Eval(v, nil)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "<<*structor.errStruct.A>>")
+	assert.Contains(t, err.Error(), "<<*structor_test.errStruct.A>>")
 
 	// Error during type conversion contains template name.
 	type errStruct2 struct {
@@ -122,5 +124,5 @@ func TestError(t *testing.T) {
 	v2 := &errStruct2{}
 	err = ev.Eval(v2, nil)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "<<*structor.errStruct2.A>>")
+	assert.Contains(t, err.Error(), "<<*structor_test.errStruct2.A>>")
 }
