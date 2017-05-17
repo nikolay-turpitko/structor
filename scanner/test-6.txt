@@ -1,0 +1,4 @@
+A:"aaa", B:"bbb", some-tag:"some-tag"; c2_x:"some data for c2_x"
+skipped line
+d-tag: line without quotes till endline
+aaa='alternative delimiters', bbb='alternative quotes'

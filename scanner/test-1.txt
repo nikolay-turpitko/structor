@@ -1,0 +1,1 @@
+A:"aaa" B:"bbb" some-tag:"some-tag" c2_x:"some data for c2_x"

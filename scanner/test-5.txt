@@ -1,0 +1,19 @@
+A="aaa"
+B=bbb
+
+# should be skipped
+// should be skipped
+should be skipped
+
+some-tag=some-tag
+c2_x=some data for c2_x
+
+multiline=line1 \
+line 2 \
+line 3
+should be skipped
+
+multiline2=line1 \
+line 2 \
+line 3
+Z=some text for Z property

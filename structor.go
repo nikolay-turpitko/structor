@@ -7,6 +7,8 @@ import (
 	"text/template"
 
 	multierror "github.com/hashicorp/go-multierror"
+
+	"github.com/nikolay-turpitko/structor/scanner"
 )
 
 // ELInterpreter is an interface of EL interpreter.
@@ -137,7 +139,10 @@ func (ev evaluator) fieldIntrospect(
 	i int) (string, string, *reflect.Value, map[string]string, error) {
 	f := typ.Field(i)
 	v := val.Field(i)
-	tags := splitTag(string(f.Tag))
+	tags, err := scanner.Default.Tags(f.Tag)
+	if err != nil {
+		return "", f.Name, &v, tags, err
+	}
 	if !v.CanSet() {
 		err := fmt.Errorf("%s is not settable", f.Name)
 		return "", f.Name, &v, tags, err
