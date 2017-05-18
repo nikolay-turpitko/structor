@@ -39,7 +39,16 @@ type Context struct {
 // DefaultInterpreter is a default implementation of Interpreter,
 // which is based on "text/template".
 type DefaultInterpreter struct {
+	// Custom functions, available for use in EL expressions.
 	CustomFuncs template.FuncMap
+	// Left delimiter for templates.
+	LeftDelim string
+	// Right delimiter for templates.
+	RightDelim string
+	// Automatically enclose passed expression into delimiters before
+	// interpretation. This allows to pass simplified expressions. For example,
+	// `atoi "42"` instead of `{{atoi "42"}}`.
+	AutoEnclose bool
 }
 
 // Execute implements Interpreter.Execute()
@@ -56,7 +65,22 @@ func (i *DefaultInterpreter) Execute(
 		return r
 	}
 	templName := fmt.Sprintf("<<%s>>", ctx.LongName)
-	t, err := template.New(templName).Funcs(customFuncs).Parse(expression)
+	left := i.LeftDelim
+	right := i.RightDelim
+	if left == "" {
+		left = "{{"
+	}
+	if right == "" {
+		right = "}}"
+	}
+	if i.AutoEnclose {
+		expression = fmt.Sprintf("%s%s%s", left, expression, right)
+	}
+	t, err := template.
+		New(templName).
+		Delims(left, right).
+		Funcs(customFuncs).
+		Parse(expression)
 	if err != nil {
 		return nil, err
 	}

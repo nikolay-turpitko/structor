@@ -43,7 +43,14 @@ Possible use cases:
 
 - use engines like regexp, xpath or goquery to extract pieces of data from
   text, xml, html etc. formats into fields (scraping data from html pages, text
-  files or emails);
+  files or emails); for long and complex expressions it can be convenient to
+  use multiline tags and process whole tag value as single expression;
+
+- registering a custom EL "interpreter", which executes arbitrary custom logic
+  in its Execute() method, it is possible to use structor as a "struct walker"
+  or "field visitor", which will traverse structure fields and invoke custom
+  function for every field, containing custom tag; it can be convenient with
+  ability to use multiline tags;
 
 ## Ideas of functions, available in expressions
 
@@ -72,10 +79,6 @@ Possible use cases:
 
 ## Other ideas
 
-- [ ] option to use whole tag string, not splitted (should simplify quoting for
-  regexp etc.)
-- [ ] option to change template delimiters
-- [ ] option to automatically insert delimiters
 - [ ] errors with stack traces to debug custom functions
 - [ ] optional dependencies to xpath, goquery, etc.
 - [ ] namespaces for custom functions (at least some common prefix) - ?

@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/nikolay-turpitko/structor"
+	"github.com/nikolay-turpitko/structor/el"
 )
 
 // TestSimple tests simple structor usage: string fields, data from context,
@@ -125,4 +126,62 @@ func TestError(t *testing.T) {
 	err = ev.Eval(v2, nil)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "<<*structor_test.errStruct2.A>>")
+}
+
+// cc - char counting "interpreter"
+type cc struct{}
+
+func (cc) Execute(expr string, _ *el.Context) (interface{}, error) {
+	return len(expr), nil
+}
+
+// TestCustomInterpretor tests usage of custom interpreter and tag name.
+func TestCustomInterpretor(t *testing.T) {
+	ev := structor.NewEvaluator(structor.Interpreters{
+		"cc": &cc{},
+	})
+	type theStruct struct {
+		A int `cc:"something"`
+	}
+	v := &theStruct{}
+	err := ev.Eval(v, nil)
+	assert.NoError(t, err)
+	assert.Equal(t, 9, v.A)
+}
+
+// TestWholeTag tests usage of the whole tag value as an expression for custom
+// interpreter.
+func TestWholeTag(t *testing.T) {
+	ev := structor.NewEvaluator(structor.Interpreters{
+		structor.WholeTag: &cc{},
+	})
+	type theStruct struct {
+		A int `this whole string should be processed as an EL expression`
+	}
+	v := &theStruct{}
+	err := ev.Eval(v, nil)
+	assert.NoError(t, err)
+	assert.Equal(t, 57, v.A)
+}
+
+// TestWholeTagAutoEnclose tests usage of the whole tag value as an
+// text/template EL expression with automatic enclosing into delimiters.
+func TestWholeTagAutoEnclose(t *testing.T) {
+	ev := structor.NewEvaluator(structor.Interpreters{
+		structor.WholeTag: &el.DefaultInterpreter{
+			AutoEnclose: true,
+			CustomFuncs: template.FuncMap{
+				"add": func(a, b int) int { return a + b },
+			},
+		},
+	})
+	type theStruct struct {
+		A int `set 40`
+		B int `set 2`
+		C int `set (add .Struct.A .Struct.B)`
+	}
+	v := &theStruct{}
+	err := ev.Eval(v, nil)
+	assert.NoError(t, err)
+	assert.Equal(t, 42, v.C)
 }

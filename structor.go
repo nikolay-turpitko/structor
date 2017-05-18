@@ -19,14 +19,36 @@ type Evaluator interface {
 	Eval(s, extra interface{}) error
 }
 
+// Interpreters is a map of tag names to el.Interpreters.  Used to register
+// different interpreters for different tag names.
+//
+// Only first tag name on the struct field is currently recognized and
+// processed. So, only one EL expression per structure field, but different
+// fields of the same structure can be processed by different interpreters.
+type Interpreters map[string]el.Interpreter
+
+// WholeTag constant can be used as tag name in the Interpreters to indicate
+// that whole tag value should be passed to the interpreter.
+//
+// Registering interpreter to the whole tag value conflicts with any other
+// usage of the struct's tag, but can be convenient to simplify complex EL
+// expressions with quotes (regexp, for example).
+//
+// WholeTag interpreter is probed after all other registered interpreters.
+const WholeTag = ""
+
 // NewEvaluator returns Evaluator with desired settings.
 //
-//  evalTag - name of the tag, containing expression for evaluator;
-//  interpreter - EL interpreter;
-func NewEvaluator(
-	evalTag string,
-	interpreter el.Interpreter) Evaluator {
-	return &evaluator{evalTag, interpreter}
+// Only first tag with EL will be recognized and used (only one
+// expression per struct field). Different fields of the same struct can be
+// processed using different EL interpreters.
+//
+//  interpreters - is a map of registered tag names to EL interpreters.
+func NewEvaluator(interpreters Interpreters) Evaluator {
+	if len(interpreters) == 0 {
+		panic("no interpreters registered")
+	}
+	return &evaluator{interpreters}
 }
 
 // NewDefaultEvaluator returns default Evaluator implementation. Default
@@ -35,13 +57,15 @@ func NewEvaluator(
 //
 //  customFuncs - custom functions, available for interpreter;
 func NewDefaultEvaluator(customFuncs template.FuncMap) Evaluator {
-	return NewEvaluator(
-		"eval", &el.DefaultInterpreter{AddProvidedFuncs(customFuncs)})
+	return NewEvaluator(Interpreters{
+		"eval": &el.DefaultInterpreter{
+			CustomFuncs: AddProvidedFuncs(customFuncs),
+		},
+	})
 }
 
 type evaluator struct {
-	evalTag     string
-	interpreter el.Interpreter
+	interpreters Interpreters
 }
 
 func (ev evaluator) Eval(s, extra interface{}) error {
@@ -60,32 +84,32 @@ func (ev evaluator) eval(s, extra, substruct, subctx interface{}) error {
 	var merr error
 	for i, l := 0, typ.NumField(); i < l; i++ {
 		err := func() error {
-			expr, name, value, tags, err := ev.fieldIntrospect(val, typ, i)
-			longName := fmt.Sprintf("%T.%s", curr, name)
+			f, err := ev.fieldIntrospect(val, typ, i)
+			longName := fmt.Sprintf("%T.%s", curr, f.name)
 			if err != nil {
 				return fmt.Errorf("<<%s>>: %v", longName, err)
 			}
-			if expr == "" {
-				if value.Kind() == reflect.Struct {
+			if f.expr == "" {
+				if f.value.Kind() == reflect.Struct {
 					// process embedded struct without tag
-					return ev.eval(s, extra, byRef(value), nil)
+					return ev.eval(s, extra, byRef(f.value), nil)
 				}
 				return nil
 			}
 			ctx := &el.Context{
-				Name:     name,
+				Name:     f.name,
 				LongName: longName,
-				Val:      value.Interface(),
-				Tags:     tags,
+				Val:      f.value.Interface(),
+				Tags:     f.tags,
 				Struct:   s,
 				Extra:    extra,
 				Sub:      subctx,
 			}
-			result, err := ev.interpreter.Execute(expr, ctx)
+			result, err := f.interpreter.Execute(f.expr, ctx)
 			if err != nil {
 				return err
 			}
-			err = reflectSet(value, result)
+			err = reflectSet(f.value, result)
 			if err == nil {
 				return nil
 			}
@@ -93,7 +117,7 @@ func (ev evaluator) eval(s, extra, substruct, subctx interface{}) error {
 				return fmt.Errorf("<<%s>>: %v", longName, err)
 			}
 			// process embedded struct with tag
-			return ev.eval(s, extra, byRef(value), result)
+			return ev.eval(s, extra, byRef(f.value), result)
 		}()
 		if err != nil {
 			merr = multierror.Append(merr, err)
@@ -116,27 +140,48 @@ func (ev evaluator) structIntrospect(
 	return v, t, nil
 }
 
+type fieldDescr struct {
+	name        string
+	expr        string
+	interpreter el.Interpreter
+	value       reflect.Value
+	tags        map[string]string
+}
+
 func (ev evaluator) fieldIntrospect(
 	val reflect.Value,
 	typ reflect.Type,
-	i int) (string, string, reflect.Value, map[string]string, error) {
+	i int) (fieldDescr, error) {
 	f := typ.Field(i)
 	v := indirect(val.Field(i))
 	tags, err := scanner.Default.Tags(f.Tag)
+	res := fieldDescr{
+		name:  f.Name,
+		value: v,
+		tags:  tags,
+	}
 	if err != nil {
-		return "", f.Name, v, tags, err
+		return res, err
 	}
 	if !v.CanSet() && (!v.CanAddr() || !v.Addr().CanSet()) {
 		err := fmt.Errorf("%s is not settable", f.Name)
-		return "", f.Name, v, tags, err
+		return res, err
 	}
 	for k, t := range tags {
-		if k == ev.evalTag {
+		if intr, ok := ev.interpreters[k]; ok {
 			delete(tags, k)
-			return t, f.Name, v, tags, nil
+			res.expr = t
+			res.interpreter = intr
+			return res, nil
 		}
 	}
-	return "", f.Name, v, tags, nil
+	if intr, ok := ev.interpreters[WholeTag]; ok {
+		delete(tags, WholeTag)
+		res.expr = string(f.Tag)
+		res.interpreter = intr
+		return res, nil
+	}
+	return res, nil
 }
 
 var errTryRecursive = errors.New("try recursive") // sentinel error
