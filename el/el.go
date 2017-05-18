@@ -10,10 +10,13 @@ import (
 	"bytes"
 	"fmt"
 	"text/template"
+
+	"github.com/nikolay-turpitko/structor/funcs/use"
 )
 
 // Interpreter is an interface of EL interpreter.
 type Interpreter interface {
+	// Execute parses and executes expression with a given context.
 	Execute(expression string, ctx *Context) (result interface{}, err error)
 }
 
@@ -40,7 +43,7 @@ type Context struct {
 // which is based on "text/template".
 type DefaultInterpreter struct {
 	// Custom functions, available for use in EL expressions.
-	CustomFuncs template.FuncMap
+	Funcs use.FuncMap
 	// Left delimiter for templates.
 	LeftDelim string
 	// Right delimiter for templates.
@@ -55,12 +58,12 @@ type DefaultInterpreter struct {
 func (i *DefaultInterpreter) Execute(
 	expression string,
 	ctx *Context) (interface{}, error) {
-	customFuncs := template.FuncMap{}
-	for k, v := range i.CustomFuncs {
-		customFuncs[k] = v
+	funcs := template.FuncMap{}
+	for k, v := range i.Funcs {
+		funcs[k] = v
 	}
 	var res interface{}
-	customFuncs["set"] = func(r interface{}) interface{} {
+	funcs["set"] = func(r interface{}) interface{} {
 		res = r
 		return r
 	}
@@ -79,7 +82,7 @@ func (i *DefaultInterpreter) Execute(
 	t, err := template.
 		New(templName).
 		Delims(left, right).
-		Funcs(customFuncs).
+		Funcs(funcs).
 		Parse(expression)
 	if err != nil {
 		return nil, err

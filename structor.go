@@ -4,11 +4,11 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"text/template"
 
 	multierror "github.com/hashicorp/go-multierror"
 
 	"github.com/nikolay-turpitko/structor/el"
+	"github.com/nikolay-turpitko/structor/funcs/use"
 	"github.com/nikolay-turpitko/structor/scanner"
 )
 
@@ -55,12 +55,10 @@ func NewEvaluator(interpreters Interpreters) Evaluator {
 // implementation uses tag "eval" for expressions and EL interpreter, based on
 // `"text/template"`.
 //
-//  customFuncs - custom functions, available for interpreter;
-func NewDefaultEvaluator(customFuncs template.FuncMap) Evaluator {
+//  funcs - custom functions, available for interpreter;
+func NewDefaultEvaluator(funcs use.FuncMap) Evaluator {
 	return NewEvaluator(Interpreters{
-		"eval": &el.DefaultInterpreter{
-			CustomFuncs: AddProvidedFuncs(customFuncs),
-		},
+		"eval": &el.DefaultInterpreter{Funcs: funcs},
 	})
 }
 

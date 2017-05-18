@@ -80,10 +80,6 @@ Possible use cases:
 ## Other ideas
 
 - [ ] errors with stack traces to debug custom functions
-- [ ] optional dependencies to xpath, goquery, etc.
-- [ ] namespaces for custom functions (at least some common prefix) - ?
-- [ ] option to add only certain namespaces (along with dependencies, probably
-  from separate package/repo) - ?
 - [ ] godoc in separate doc.go file
 - [ ] travis CI
 - [ ] go expressions ("go/types".Eval()) as EL - ?

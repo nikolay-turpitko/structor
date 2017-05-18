@@ -5,12 +5,15 @@ import (
 	"fmt"
 	"sort"
 	"testing"
-	"text/template"
 
 	"github.com/stretchr/testify/assert"
 
 	"github.com/nikolay-turpitko/structor"
 	"github.com/nikolay-turpitko/structor/el"
+	"github.com/nikolay-turpitko/structor/funcs/encoding"
+	"github.com/nikolay-turpitko/structor/funcs/math"
+	"github.com/nikolay-turpitko/structor/funcs/strings"
+	"github.com/nikolay-turpitko/structor/funcs/use"
 )
 
 // TestSimple tests simple structor usage: string fields, data from context,
@@ -31,7 +34,7 @@ func TestSimple(t *testing.T) {
 		D: "init D",
 	}
 	extra := struct{ X string }{"extra field X"}
-	ev := structor.NewDefaultEvaluator(template.FuncMap{
+	ev := structor.NewDefaultEvaluator(use.FuncMap{
 		"printMap": func(m map[string]string) string {
 			keys := []string{}
 			for k := range m {
@@ -81,9 +84,11 @@ func TestObj(t *testing.T) {
 		K inner
 	}
 	v := &obj{F: &innerSub{}}
-	ev := structor.NewDefaultEvaluator(template.FuncMap{
-		"add": func(a, b int) int { return a + b },
-	})
+	ev := structor.NewDefaultEvaluator(use.Packages(
+		use.Pkg{"", math.Pkg},
+		use.Pkg{"", encoding.Pkg},
+		use.Pkg{"", strings.Pkg},
+	))
 	err := ev.Eval(v, nil)
 	assert.NoError(t, err)
 	assert.Equal(t, 42, v.B)
@@ -170,9 +175,7 @@ func TestWholeTagAutoEnclose(t *testing.T) {
 	ev := structor.NewEvaluator(structor.Interpreters{
 		structor.WholeTag: &el.DefaultInterpreter{
 			AutoEnclose: true,
-			CustomFuncs: template.FuncMap{
-				"add": func(a, b int) int { return a + b },
-			},
+			Funcs:       math.Pkg,
 		},
 	})
 	type theStruct struct {
