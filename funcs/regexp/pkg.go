@@ -7,7 +7,7 @@ import (
 )
 
 var Pkg = use.FuncMap{
-	"match": func(s, re string, i, j int) string {
-		return regexp.MustCompile(re).FindAllStringSubmatch(s, -1)[i][j]
+	"match": func(s, re string) [][]string {
+		return regexp.MustCompile(re).FindAllStringSubmatch(s, -1)
 	},
 }

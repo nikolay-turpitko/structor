@@ -54,26 +54,25 @@ Possible use cases:
 
 ## Ideas of functions, available in expressions
 
-- [ ] atoi
-- [ ] base64/unbase64
+- [x] atoi
+- [x] base64/unbase64
 - [ ] bash - should invoke bash and return struct with exit code, stdout,
   stderr
 - [ ] encrypt/decrypt - (too many possible variants) ?
-- [ ] env
+- [x] env
 - [ ] eval - get expression from other field (`eval .Extra.Expression`) - ?
-- [ ] fields
-- [ ] file - read file content to []byte, string or []string
+- [x] fields
+- [x] readFile - read file content to []byte or string
 - [ ] goquery
-- [ ] hex/unhex
-- [ ] match
-- [ ] math (basic arithmetics)
-- [ ] replace
-- [ ] rot13/unrot13
+- [x] hex/unhex
+- [x] match
+- [x] math (basic arithmetics)
+- [x] replace
+- [x] rot13
 - [x] set
-- [ ] split
-- [ ] sscanf
+- [x] split
 - [x] standard for package `"text/template"`
-- [ ] trimSpace
+- [x] trimSpace
 - [ ] xpath
 - [x] ... (custom)
 
