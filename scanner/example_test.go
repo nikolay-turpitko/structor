@@ -7,6 +7,8 @@ import (
 	"github.com/nikolay-turpitko/structor/scanner"
 )
 
+// ExampleStructTag is an example ported from "reflect" package to
+// illustrate support of conventional syntax within tags.
 func ExampleStructTag() {
 	type S struct {
 		F string `species:"gopher" color:"blue"`
@@ -22,6 +24,8 @@ func ExampleStructTag() {
 	// blue gopher
 }
 
+// ExampleStructTag_Lookup is an example ported from "reflect" package to
+// illustrate support of conventional syntax within tags.
 func ExampleStructTag_Lookup() {
 	type S struct {
 		F0 string `alias:"field_0"`
@@ -51,7 +55,8 @@ func ExampleStructTag_Lookup() {
 	// (not specified)
 }
 
-func ExampleStructTagEx() {
+// ExampleStructTag_Ex illustrates use of more relaxed syntax within struct tags.
+func ExampleStructTag_Ex() {
 	type S struct {
 		F string `
 # this is an example of multiline tag
@@ -105,6 +110,35 @@ key-1='value-1', key-2="value-2"`
 	// way
 	// value-1 value-2
 	//
+	// blue gopher
+	// value-1 value-2
+}
+
+// ExampleStructTag_Mix illustrate mixed usage of "reflect" package and
+// structor.Scanner on the same tags.
+//
+// Tags for libs, which uses conventional syntax, could be placed on the first
+// line and all other lines can be used by the structor.Scanner.
+func ExampleStructTag_Mix() {
+	type S struct {
+		F string `species:"gopher" color:"blue"
+				  key-1: "value-1"
+				  key-2: "value-2"`
+	}
+
+	s := S{}
+	st := reflect.TypeOf(s)
+	field := st.Field(0)
+	fmt.Println(field.Tag.Get("color"), field.Tag.Get("species"))
+	// standard lib won't see these fields, but won't panic either
+	fmt.Println("'", field.Tag.Get("key-1"), field.Tag.Get("key-2"), "'")
+	tags, _ := scanner.Default.Tags(field.Tag)
+	fmt.Println(tags["color"], tags["species"])
+	fmt.Println(tags["key-1"], tags["key-2"])
+
+	// Output:
+	// blue gopher
+	// '   '
 	// blue gopher
 	// value-1 value-2
 }
