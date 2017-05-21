@@ -41,12 +41,28 @@ func TestCrypt(t *testing.T) {
 	type theStruct struct {
 		A string `c_rot13 "structor"`
 		B string `c_rot13 "fgehpgbe"`
+		C string `"structor\n" | s_reader | c_md5 | e_hex`
+		//D []byte `"KqNVJWMfwUPyVnoPQe5ziXppSa/vIJKcGmbWAHi71LQ=" | e_unbase64 | set`
+		D []byte `c_rndKey | set`
+		E string `"some plain text message for test"`
+		F []byte `.Struct.E | b_bytes | c_aes .Struct.D | set`
+		G []byte `.Struct.F | c_unaes .Struct.D | set`
 	}
 	v := &theStruct{}
 	err := testEvaluator.Eval(v, nil)
 	assert.NoError(t, err)
 	assert.Equal(t, "fgehpgbe", v.A)
 	assert.Equal(t, "structor", v.B)
+	assert.Equal(t, "a228f448aa0e427fdf2214eb186d2edf", v.C)
+	assert.NotNil(t, v.D)
+	assert.NotEmpty(t, v.D)
+	assert.NotNil(t, v.F)
+	assert.NotEmpty(t, v.F)
+	assert.NotNil(t, v.G)
+	assert.NotEmpty(t, v.G)
+	assert.NotEqual(t, v.E, v.F)
+	assert.NotEqual(t, v.F, v.G)
+	assert.Equal(t, v.E, string(v.G))
 }
 
 func TestEncoding(t *testing.T) {

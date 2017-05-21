@@ -85,7 +85,7 @@ func (ev evaluator) eval(s, extra, substruct, subctx interface{}) error {
 			f, err := ev.fieldIntrospect(val, typ, i)
 			longName := fmt.Sprintf("%T.%s", curr, f.name)
 			if err != nil {
-				return fmt.Errorf("<<%s>>: %v", longName, err)
+				return fmt.Errorf("structor: <<%s>>: %v", longName, err)
 			}
 			if f.expr == "" {
 				if f.value.Kind() == reflect.Struct {
@@ -112,7 +112,7 @@ func (ev evaluator) eval(s, extra, substruct, subctx interface{}) error {
 				return nil
 			}
 			if err != errTryRecursive {
-				return fmt.Errorf("<<%s>>: %v", longName, err)
+				return fmt.Errorf("structor: <<%s>>: %v", longName, err)
 			}
 			// process embedded struct with tag
 			return ev.eval(s, extra, byRef(f.value), result)
@@ -130,7 +130,7 @@ func (ev evaluator) structIntrospect(
 	t := v.Type()
 	if t.Kind() != reflect.Struct {
 		err := fmt.Errorf(
-			"%v must be a struct or a pointer to struct, actually: %v",
+			"structor: %v must be a struct or a pointer to struct, actually: %v",
 			s,
 			t.Kind())
 		return v, t, err
@@ -162,7 +162,7 @@ func (ev evaluator) fieldIntrospect(
 		return res, err
 	}
 	if !v.CanSet() && (!v.CanAddr() || !v.Addr().CanSet()) {
-		err := fmt.Errorf("%s is not settable", f.Name)
+		err := fmt.Errorf("structor: %s is not settable", f.Name)
 		return res, err
 	}
 	for k, t := range tags {
@@ -189,7 +189,7 @@ func reflectSet(v reflect.Value, nv interface{}) (err error) {
 		if r := recover(); r != nil {
 			var ok bool
 			if err, ok = r.(error); !ok {
-				err = fmt.Errorf("%v", r)
+				err = fmt.Errorf("structor: %v", r)
 			}
 		}
 	}()

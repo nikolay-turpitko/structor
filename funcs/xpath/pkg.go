@@ -21,7 +21,7 @@ var Pkg = use.FuncMap{
 		}
 		s, ok := p.String(node)
 		if !ok {
-			return "", fmt.Errorf("path does not evaluate to string: %s", path)
+			return "", fmt.Errorf("xpath: path does not evaluate to string: %s", path)
 		}
 		return s, nil
 	},

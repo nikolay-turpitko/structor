@@ -58,7 +58,7 @@ Possible use cases:
 - [x] base64/unbase64
 - [ ] bash - should invoke bash and return struct with exit code, stdout,
   stderr
-- [ ] encrypt/decrypt - (too many possible variants) ?
+- [x] encrypt/decrypt
 - [x] env
 - [ ] eval - get expression from other field (`eval .Extra.Expression`) - ?
 - [x] fields
