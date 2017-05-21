@@ -9,6 +9,7 @@ package el
 import (
 	"bytes"
 	"fmt"
+	"strings"
 	"text/template"
 
 	"github.com/nikolay-turpitko/structor/funcs/use"
@@ -49,8 +50,9 @@ type DefaultInterpreter struct {
 	// Right delimiter for templates.
 	RightDelim string
 	// Automatically enclose passed expression into delimiters before
-	// interpretation. This allows to pass simplified expressions. For example,
-	// `atoi "42"` instead of `{{atoi "42"}}`.
+	// interpretation (if it is not already enclosed). This allows to pass
+	// simplified expressions. For example, `atoi "42"` instead of
+	// `{{atoi "42"}}`.
 	AutoEnclose bool
 }
 
@@ -76,7 +78,9 @@ func (i *DefaultInterpreter) Execute(
 	if right == "" {
 		right = "}}"
 	}
-	if i.AutoEnclose {
+	if i.AutoEnclose &&
+		!(strings.HasPrefix(expression, left) &&
+			strings.HasSuffix(expression, right)) {
 		expression = fmt.Sprintf("%s%s%s", left, expression, right)
 	}
 	t, err := template.

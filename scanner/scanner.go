@@ -75,7 +75,10 @@ func (s scanner) Scan(r io.Reader) (map[string]string, error) {
 		case tokenTypeKey:
 			k = t
 		case tokenTypeValue:
-			values[k] = t
+			if k != "" {
+				values[k] = t
+				k = ""
+			}
 		}
 	}
 	if err := bs.Err(); err != nil {
@@ -166,7 +169,7 @@ func consume(data []byte, escape rune, f func(rune) bool) (int, []byte, error) {
 
 func isKeyRune(r rune) bool {
 	switch r {
-	case '_':
+	case '_', '$':
 		return true
 	}
 	return unicode.In(r, unicode.Letter, unicode.Digit, unicode.Dash, unicode.Hyphen)

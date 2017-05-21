@@ -75,6 +75,8 @@ func TestScanner(t *testing.T) {
 				"d-tag":    "line without quotes till endline",
 				"aaa":      "alternative delimiters",
 				"bbb":      "alternative quotes",
+				"$x":       "55",
+				"$y":       "77",
 			},
 		},
 	}
@@ -88,6 +90,7 @@ func TestScanner(t *testing.T) {
 			values, err := scanner.Default.Scan(f)
 			assert.NoError(t, err)
 			assert.Equal(t, fx.expect, values)
+			assert.NotContains(t, values, "")
 		})
 	}
 }
