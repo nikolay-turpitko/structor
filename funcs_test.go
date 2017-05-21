@@ -8,25 +8,31 @@ import (
 
 	"github.com/nikolay-turpitko/structor"
 	"github.com/nikolay-turpitko/structor/el"
+	"github.com/nikolay-turpitko/structor/funcs/bytes"
 	"github.com/nikolay-turpitko/structor/funcs/crypt"
 	"github.com/nikolay-turpitko/structor/funcs/encoding"
+	"github.com/nikolay-turpitko/structor/funcs/goquery"
 	"github.com/nikolay-turpitko/structor/funcs/math"
 	funcs_os "github.com/nikolay-turpitko/structor/funcs/os"
 	"github.com/nikolay-turpitko/structor/funcs/regexp"
 	"github.com/nikolay-turpitko/structor/funcs/strings"
 	"github.com/nikolay-turpitko/structor/funcs/use"
+	"github.com/nikolay-turpitko/structor/funcs/xpath"
 )
 
 var testEvaluator = structor.NewEvaluator(structor.Interpreters{
 	structor.WholeTag: &el.DefaultInterpreter{
 		AutoEnclose: true,
 		Funcs: use.Packages(
+			use.Pkg{"b_", bytes.Pkg},
 			use.Pkg{"c_", crypt.Pkg},
 			use.Pkg{"e_", encoding.Pkg},
+			use.Pkg{"g_", goquery.Pkg},
 			use.Pkg{"m_", math.Pkg},
 			use.Pkg{"o_", funcs_os.Pkg},
 			use.Pkg{"r_", regexp.Pkg},
 			use.Pkg{"s_", strings.Pkg},
+			use.Pkg{"x_", xpath.Pkg},
 		),
 	},
 })
@@ -45,9 +51,9 @@ func TestCrypt(t *testing.T) {
 
 func TestEncoding(t *testing.T) {
 	type theStruct struct {
-		A string `e_base64 (e_bytes "structor\n")`
+		A string `e_base64 (b_bytes "structor\n")`
 		B []byte `set (e_unbase64 "c3RydWN0b3IK")`
-		C string `e_hex (e_bytes "structor")`
+		C string `e_hex (b_bytes "structor")`
 		D []byte `set (e_unhex "7374727563746f72")`
 	}
 	v := &theStruct{}
@@ -61,11 +67,13 @@ func TestEncoding(t *testing.T) {
 
 func TestMath(t *testing.T) {
 	type theStruct struct {
-		A  int     `set (m_add 1 2 3 4 5)`
-		B1 int     `set (m_add (m_mul 2 20) (m_sub 5 3))`
-		B2 int     `{{with $v := m_sub 5 3}}{{m_mul 2 20 | m_add $v | set}}{{end}}` // pipes and var
-		C  int     `set (m_sub 5 2 1)`
-		D  float64 `m_div 5 2 | set`
+		A  int `set (m_add 1 2 3 4 5)`
+		B1 int `set (m_add (m_mul 2 20) (m_sub 5 3))`
+		B2 int `{{with $v := m_sub 5 3}}
+				{{m_mul 2 20 | m_add $v | set}}
+				{{end}}` // pipes and var
+		C int     `set (m_sub 5 2 1)`
+		D float64 `m_div 5 2 | set`
 	}
 	v := &theStruct{}
 	err := testEvaluator.Eval(v, nil)
@@ -83,8 +91,8 @@ func TestOS(t *testing.T) {
 		A           string   `o_env .Struct.FileNameEnv`
 		B           string   `o_readFile "./LICENSE" | set`
 		C           []byte   `.Struct.FileNameEnv | o_env | o_readFile | set`
-		D           []string `set (s_split (s_string (o_readFile "./LICENSE")) "\n")`
-		E           []string `set (s_split (o_readTxtFile "./LICENSE") "\n")`
+		D           []string `"./LICENSE" | o_readFile | s_string | s_split "\n" | set`
+		E           []string `"./LICENSE" | o_readTxtFile | s_split "\n" | set`
 	}
 	os.Setenv("license_file_name", "./LICENSE")
 	v := &theStruct{}
@@ -106,21 +114,30 @@ func TestOS(t *testing.T) {
 
 func TestRegexp(t *testing.T) {
 	type theStruct struct {
-		A [][]string `set (r_match "xxx-111-yyy-222" "(\\w+)-(\\d+)")`
+		A [][]string `"xxx-111-yyy-222" | r_match "(\\w+)-(\\d+)" | set`
+		B string     `"because the sky is blue"`
+		C string     `index (.Struct.B | r_match "(\\w+)") 2 1`
 	}
 	v := &theStruct{}
 	err := testEvaluator.Eval(v, nil)
 	assert.NoError(t, err)
-	assert.Equal(t, [][]string{{"xxx-111", "xxx", "111"}, {"yyy-222", "yyy", "222"}}, v.A)
+	assert.Equal(
+		t,
+		[][]string{
+			{"xxx-111", "xxx", "111"},
+			{"yyy-222", "yyy", "222"},
+		},
+		v.A)
+	assert.Equal(t, "sky", v.C)
 }
 
 func TestStrings(t *testing.T) {
 	type theStruct struct {
 		A int      `set (s_atoi "42")`
 		B []string `set (s_fields "aaa bbb ccc")`
-		C []string `set (s_split "111|222" "|")`
+		C []string `set (s_split "|" "111|222")`
 		D string   `s_trimSpace "  xxx  "`
-		E string   `s_replace "o-!-o" "o" "0"`
+		E string   `"o-!-o" | s_replace "o" "0"`
 	}
 	v := &theStruct{}
 	err := testEvaluator.Eval(v, nil)
@@ -130,4 +147,100 @@ func TestStrings(t *testing.T) {
 	assert.Equal(t, []string{"111", "222"}, v.C)
 	assert.Equal(t, "xxx", v.D)
 	assert.Equal(t, "0-!-0", v.E)
+}
+
+func TestXPath(t *testing.T) {
+	extra := struct {
+		F1 []byte
+		F2 []byte
+	}{
+		[]byte(`
+			<div>
+				<span>aaa</span>
+				<a href="xxx:bbb">ccc ddd eee fff</a>
+				<b class="ggg">   hhh  </b>
+			</div>
+		`),
+		[]byte(`
+			<div>
+				<span>xxx yyy zzz</span>
+				<div class="xxx">
+					<a href="http://zzz.com">zzz</a>
+					<a href="mailto:zzz@zzz.com">zzz</a>
+				</div>
+			</div>
+		`),
+	}
+	type theStruct struct {
+		// Comment actions before and after text can be used to pass text
+		// literally to evaluator with AutoEnclose option.
+		// This trick can be useful in case of complex format with quotas etc.
+		// Alternatively, data can be passed via .Extra.
+		HTML string `{{/* */}}
+					<div attr="some attr">zzz</div>
+					{{/* */}}`
+		A     string `.Extra.F1 | b_reader | x_xpath "//span"`
+		B     string `index (.Extra.F1 | b_reader | x_xpath "//a/@href" | s_split ":") 1`
+		D     string `index (.Extra.F1 | b_reader | x_xpath "//a" | s_fields) 1`
+		E     string `index (.Extra.F1 | b_reader | x_xpath "//a" | r_match "(\\w+)") 2 1`
+		H     string `.Extra.F1 | b_reader | x_xpath "//*[@class='ggg']" | s_trimSpace`
+		K     string `.Struct.HTML | s_reader | x_xpath "//div/@attr"`
+		Email string `index (.Extra.F2 | b_reader | x_xpath "//a[contains(@href,'mailto')]/@href" | s_split ":") 1`
+	}
+	v := &theStruct{}
+	err := testEvaluator.Eval(v, extra)
+	assert.NoError(t, err)
+	assert.Equal(t, "aaa", v.A)
+	assert.Equal(t, "bbb", v.B)
+	assert.Equal(t, "ddd", v.D)
+	assert.Equal(t, "eee", v.E)
+	assert.Equal(t, "hhh", v.H)
+	assert.Equal(t, "some attr", v.K)
+	assert.Equal(t, "zzz@zzz.com", v.Email)
+}
+
+func TestGoquery(t *testing.T) {
+	extra := struct {
+		F1 []byte
+		F2 []byte
+	}{
+		[]byte(`
+			<div>
+				<span>aaa</span>
+				<a href="xxx:bbb">ccc ddd eee fff</a>
+				<b class="ggg">   hhh  </b>
+			</div>
+		`),
+		[]byte(`
+			<div>
+				<span>xxx yyy zzz</span>
+				<div class="xxx">
+					<a href="http://zzz.com">zzz</a>
+					<a href="mailto:zzz@zzz.com">zzz</a>
+				</div>
+			</div>
+			<h1>header 1</h1>
+			<h1>header 2</h1>
+			<h1>header 3</h1>
+			<h1>header 4</h1>
+		`),
+	}
+	type theStruct struct {
+		A      string `(.Extra.F1 | b_reader | g_goquery "span").Text`
+		B      string `index ((.Extra.F1 | b_reader | g_goquery "a").First.AttrOr "href" "" | s_split ":") 1`
+		H      string `(.Extra.F1 | b_reader | g_goquery ".ggg").First.Text | s_trimSpace`
+		Link   string `(.Extra.F2 | b_reader | g_goquery "div.xxx a").First.AttrOr "href" ""`
+		Header string `(.Extra.F2 | b_reader | g_goquery "h1:nth-of-type(3)").Text | s_upper`
+	}
+	v := &theStruct{}
+	err := testEvaluator.Eval(v, extra)
+	assert.NoError(t, err)
+	assert.Equal(t, "aaa", v.A)
+	assert.Equal(t, "bbb", v.B)
+	assert.Equal(t, "hhh", v.H)
+	assert.Equal(t, "http://zzz.com", v.Link)
+	assert.Equal(t, "HEADER 3", v.Header)
+}
+
+func TestEmbedded(t *testing.T) {
 }

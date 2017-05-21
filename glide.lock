@@ -1,10 +1,21 @@
-hash: 884a84ddd02703466000ca35d5d18b07b742528948b95ae3fd79463aa9800d5e
-updated: 2017-05-16T22:28:26.147525377+07:00
+hash: d83ca585d78ae9005df58c5412f278bb4d8457ce1cedc1c9c42c7b9991f98b88
+updated: 2017-05-21T17:37:46.808770894+07:00
 imports:
+- name: github.com/andybalholm/cascadia
+  version: 349dd0209470eabd9514242c688c403c0926d266
 - name: github.com/hashicorp/errwrap
   version: 7554cd9344cec97297fa6649b055a8c98c2a1e55
 - name: github.com/hashicorp/go-multierror
   version: ed905158d87462226a13fe39ddf685ea65f1c11f
+- name: github.com/PuerkitoBio/goquery
+  version: e1271ee34c6a305e38566ecd27ae374944907ee9
+- name: golang.org/x/net
+  version: 513929065c19401a1c7b76ecd942f9f86a0c061b
+  subpackages:
+  - html
+  - html/atom
+- name: gopkg.in/xmlpath.v2
+  version: 860cbeca3ebcc600db0b213c0e83ad6ce91f5739
 testImports:
 - name: github.com/davecgh/go-spew
   version: 6d212800a42e8ab5c146b8ace3490ee17e5225f9

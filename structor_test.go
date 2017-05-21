@@ -74,7 +74,7 @@ func TestObj(t *testing.T) {
 		B int       `eval:"{{set (add (atoi .Struct.A) (atoi .Tags.b))}}" b:"2"`
 		C float64   `eval:"{{set .Struct.B}}"`
 		D []byte    `eval:"{{set (unbase64 .Tags.d)}}" d:"dGVzdAo="`
-		E []string  `eval:"{{set (split .Tags.e \" \")}}" e:"first second third"`
+		E []string  `eval:"{{set (split \" \" .Tags.e)}}" e:"first second third"`
 		F *innerSub `eval:"{{set .Struct.E}}"`
 		G int       `eval:"{{set 42}}"`
 		H string    `eval:"{{set 0xa}}"` // conversion of int to string

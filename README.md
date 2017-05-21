@@ -63,7 +63,7 @@ Possible use cases:
 - [ ] eval - get expression from other field (`eval .Extra.Expression`) - ?
 - [x] fields
 - [x] readFile - read file content to []byte or string
-- [ ] goquery
+- [x] goquery
 - [x] hex/unhex
 - [x] match
 - [x] math (basic arithmetics)
@@ -73,12 +73,11 @@ Possible use cases:
 - [x] split
 - [x] standard for package `"text/template"`
 - [x] trimSpace
-- [ ] xpath
+- [x] xpath
 - [x] ... (custom)
 
 ## Other ideas
 
-- [ ] errors with stack traces to debug custom functions
 - [ ] godoc in separate doc.go file
 - [ ] travis CI
 - [ ] go expressions ("go/types".Eval()) as EL - ?
