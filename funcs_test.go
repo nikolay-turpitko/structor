@@ -87,12 +87,13 @@ func TestMath(t *testing.T) {
 
 func TestOS(t *testing.T) {
 	type theStruct struct {
-		FileNameEnv string   `"license_file_name"`
-		A           string   `o_env .Struct.FileNameEnv`
-		B           string   `o_readFile "./LICENSE" | set`
-		C           []byte   `.Struct.FileNameEnv | o_env | o_readFile | set`
-		D           []string `"./LICENSE" | o_readFile | s_string | s_split "\n" | set`
-		E           []string `"./LICENSE" | o_readTxtFile | s_split "\n" | set`
+		FileNameEnv string `"license_file_name"`
+
+		A string   `o_env .Struct.FileNameEnv`
+		B string   `o_readFile "./LICENSE" | set`
+		C []byte   `.Struct.FileNameEnv | o_env | o_readFile | set`
+		D []string `"./LICENSE" | o_readFile | s_string | s_split "\n" | set`
+		E []string `"./LICENSE" | o_readTxtFile | s_split "\n" | set`
 	}
 	os.Setenv("license_file_name", "./LICENSE")
 	v := &theStruct{}
@@ -243,4 +244,37 @@ func TestGoquery(t *testing.T) {
 }
 
 func TestEmbedded(t *testing.T) {
+	extra := `
+		<div>
+			<span>some noise [B:bbb C:ccc] more noise</span>
+			<div class="xxx">
+				<p>ddd</p>
+				<p>zzz</p>
+				<p>eee</p>
+			</div>
+			<b>fff</b>
+		</div>
+		<h1>aaa</h1>
+	`
+	type theStruct struct {
+		A struct {
+			B string `index (index .Sub 0 | s_split ":") 1`
+			C string `index (index .Sub 1 | s_split ":") 1`
+		} `index (.Extra | s_reader | x_xpath "//span" | r_match "\\[(.+)\\]") 0 1 | s_fields | set`
+		B struct {
+			D string `.Sub.First.Text`
+			E string `.Sub.Last.Text`
+		} `.Extra | s_reader | g_goquery "div.xxx p" | set`
+		Embedded struct {
+			F string `.Extra | s_reader | x_xpath "//b"`
+		}
+	}
+	v := &theStruct{}
+	err := testEvaluator.Eval(v, extra)
+	assert.NoError(t, err)
+	assert.Equal(t, "bbb", v.A.B)
+	assert.Equal(t, "ccc", v.A.C)
+	assert.Equal(t, "ddd", v.B.D)
+	assert.Equal(t, "eee", v.B.E)
+	assert.Equal(t, "fff", v.Embedded.F)
 }
