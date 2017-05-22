@@ -13,8 +13,8 @@ install:
     - go get -u github.com/modocache/gover
 script:
     - glide nv | xargs golint
-    - glide nv | xargs go test -v -covermode=atomic
-    - glide nv | xargs go list -f '{{if len .XTestGoFiles}}"go test -coverprofile={{.Dir}}/.coverprofile {{.ImportPath}}"{{end}}' | xargs -i sh -c {}
+    - glide nv | xargs go test -v
+    - glide nv | xargs go list -f '{{if len .XTestGoFiles}}"go test -covermode=count -coverprofile={{.Dir}}/.coverprofile {{.ImportPath}}"{{end}}' | xargs -i sh -c {}
     - gover . coverprofile.txt
 after_success:
     - bash <(curl -s https://codecov.io/bash) -f coverprofile.txt
