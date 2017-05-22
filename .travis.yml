@@ -1,4 +1,7 @@
 language: go
+go:
+    - 1.8.x
+    - tip
 sudo: required
 before_install:
     - sudo add-apt-repository -y ppa:masterminds/glide
@@ -9,8 +12,8 @@ install:
     - go get -u github.com/golang/lint/golint
     - go get -u github.com/modocache/gover
 script:
-    - glide nv | xargs go test -v
     - glide nv | xargs golint
+    - glide nv | xargs go test -v -covermode=atomic
     - glide nv | xargs go list -f '{{if len .XTestGoFiles}}"go test -coverprofile={{.Dir}}/.coverprofile {{.ImportPath}}"{{end}}' | xargs -i sh -c {}
     - gover . coverprofile.txt
 after_success:
