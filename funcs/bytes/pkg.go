@@ -8,12 +8,16 @@ import (
 )
 
 // Pkg contains custom functions defined by this package.
+//
+// func bytes(interface{}) []byte
+//
+// Attempts to convert argument to []byte using reflection.
+//
+// func reader(b []byte) *bytes.Reader
+//
+// Creates io.Reader from []byte.
 var Pkg = use.FuncMap{
-	// Signature: func bytes(interface{}) []byte.
-	// Attempts to convert argument to []byte using reflection.
-	"bytes": convert,
-	// Signature: func reader(b []byte) *bytes.Reader.
-	// Creates io.Reader from []byte.
+	"bytes":  convert,
 	"reader": bytes.NewReader,
 }
 
