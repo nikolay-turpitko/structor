@@ -1,3 +1,18 @@
+/*
+Package structor contains interface and default implementation of EL
+(expression language) evaluator which evaluates EL expressions within tags of
+the struct, using optional additional struct as an extra context.
+
+Basic idea is to use simple expression language within Go struct tags to
+compute struct fields based on other fields or provided additional context.
+
+Due usage of reflection and EL interpretation, this package is hardly suitable
+for tasks, requiring high performance, but rather intended to be used during
+application setup or in cases where high performance is not an ultimate goal.
+
+See tests for examples of usage with xpath, regexp, goquery, encryption,
+reading from files, shell invocation, etc.
+*/
 package structor
 
 import (

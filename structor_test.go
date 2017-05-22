@@ -188,3 +188,32 @@ func TestWholeTagAutoEnclose(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, 42, v.C)
 }
+
+// Example of usage structor.
+func Example() {
+	ev := structor.NewEvaluator(structor.Interpreters{
+		structor.WholeTag: &el.DefaultInterpreter{
+			AutoEnclose: true,
+			Funcs: use.Packages(
+				use.Pkg{Funcs: math.Pkg},
+				use.Pkg{Funcs: strings.Pkg},
+			),
+		},
+	})
+	type theStruct struct {
+		A int    `set 40`
+		B int    `set 2`
+		C int    `add .Struct.A .Struct.B | set`
+		D string `"structor" | upper`
+	}
+	v := &theStruct{}
+	err := ev.Eval(v, nil)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(v.C)
+	fmt.Println(v.D)
+
+	// Output: 42
+	// STRUCTOR
+}

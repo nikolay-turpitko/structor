@@ -9,19 +9,16 @@ import (
 type oprnd interface{}
 type operation func(float64, float64) float64
 
+// Pkg contains custom functions defined by this package.
 var Pkg = use.FuncMap{
-	"add": func(op ...oprnd) oprnd {
-		return perform(func(a, b float64) float64 { return a + b }, op...)
-	},
-	"sub": func(op ...oprnd) oprnd {
-		return perform(func(a, b float64) float64 { return a - b }, op...)
-	},
-	"mul": func(op ...oprnd) oprnd {
-		return perform(func(a, b float64) float64 { return a * b }, op...)
-	},
-	"div": func(op ...oprnd) oprnd {
-		return perform(func(a, b float64) float64 { return a / b }, op...)
-	},
+	// Adds all operands, converting them to float64.
+	"add": add,
+	// Subtracts all operands from the first, converting them to float64.
+	"sub": sub,
+	// Multiplies all operands, converting them to float64.
+	"mul": mul,
+	// Divides first operand on all other operands, converting them to float64.
+	"div": div,
 }
 
 func toIntrnl(op oprnd) float64 {
@@ -34,4 +31,17 @@ func perform(f operation, op ...oprnd) oprnd {
 		res = f(res, toIntrnl(op[i]))
 	}
 	return res
+}
+
+func add(op ...oprnd) oprnd {
+	return perform(func(a, b float64) float64 { return a + b }, op...)
+}
+func sub(op ...oprnd) oprnd {
+	return perform(func(a, b float64) float64 { return a - b }, op...)
+}
+func mul(op ...oprnd) oprnd {
+	return perform(func(a, b float64) float64 { return a * b }, op...)
+}
+func div(op ...oprnd) oprnd {
+	return perform(func(a, b float64) float64 { return a / b }, op...)
 }
