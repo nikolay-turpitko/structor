@@ -1,7 +1,7 @@
 [![Build Status](https://travis-ci.org/nikolay-turpitko/structor.svg?branch=master)](https://travis-ci.org/nikolay-turpitko/structor)
 [![Software License](https://img.shields.io/badge/License-MIT-orange.svg?style=flat-square)](https://github.com/nikolay-turpitko/structor/blob/master/LICENSE)
 [![GoDoc](https://img.shields.io/badge/godoc-reference-blue.svg?style=flat-square)](https://godoc.org/github.com/nikolay-turpitko/structor)
-[![Coverage Status](http://codecov.io/github/nikolay-turpitko/structor/coverage.svg?branch=master)](http://codecov.io/github/nikolay-turpitko/structor?branch=master)
+[![codecov](https://codecov.io/gh/nikolay-turpitko/structor/branch/master/graph/badge.svg)](https://codecov.io/gh/nikolay-turpitko/structor)
 
 # structor
 Uses EL in Go struct tags to compute struct fields.
@@ -40,10 +40,10 @@ as subpackages, allowing to optimize dependencies.
 It's simpler to illustrate on examples, see examples in tests and
 [Godoc](http://godoc.org/github.com/nikolay-turpitko/structor).
 
-Possible use cases:
+## Possible use cases
 
 - take a struct, filled up from configuration file using
-  `github.com/spf13/viper` and compute additional fields:
+  [github.com/spf13/viper](https://github.com/spf13/viper) and compute additional fields:
 
   * replace referencies in settings to their values (for example base URL in
     othre URLs); also: templates in the settings themeselves, not in the tags
@@ -92,9 +92,8 @@ Possible use cases:
 
 ## Other ideas
 
-- [ ] travis CI
-- [ ] go expressions ("go/types".Eval()) as EL - ? Could be simpler than
-  default EL interpreter.
+- [ ] go expressions ("go/types".Eval()) as EL - ? Can be simpler and less
+  powerful than default EL interpreter.
 
 ## Godoc
 
