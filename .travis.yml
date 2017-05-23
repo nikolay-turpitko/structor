@@ -14,7 +14,8 @@ install:
 script:
     - glide nv | xargs golint
     - glide nv | xargs go test -v
-    - glide nv | xargs go list -f '{{if len .XTestGoFiles}}"go test -covermode=count -coverprofile={{.Dir}}/.coverprofile {{.ImportPath}}"{{end}}' | xargs -i sh -c {}
+    - MYPKGS=$(glide nv | xargs go list -f '{{if len .GoFiles}}{{.ImportPath}}{{end}}' | xargs echo | tr " " ",")
+    - glide nv | xargs go list -f "{{if and (or (len .TestGoFiles) (len .XTestGoFiles)) (len .GoFiles)}}\"go test -coverprofile={{.Dir}}/.coverprofile -coverpkg=$MYPKGS {{.ImportPath}}\"{{end}}" | xargs -i sh -c {}
     - gover . coverprofile.txt
 after_success:
     - bash <(curl -s https://codecov.io/bash) -f coverprofile.txt
