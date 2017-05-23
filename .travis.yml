@@ -12,6 +12,7 @@ install:
     - go get -u github.com/golang/lint/golint
     - go get -u github.com/modocache/gover
 script:
+    - find . -type d -name vendor -prune -o -type f -name "*.go" -print | xargs go tool vet -structtags=false
     - glide nv | xargs golint
     - glide nv | xargs go test -v
     - MYPKGS=$(glide nv | xargs go list -f '{{if len .GoFiles}}{{.ImportPath}}{{end}}' | xargs echo | tr " " ",")

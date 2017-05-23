@@ -7,9 +7,9 @@ import (
 	"github.com/nikolay-turpitko/structor/scanner"
 )
 
-// ExampleStructTag is an example ported from "reflect" package to
+// Example_reflect_StructTag is an example ported from "reflect" package to
 // illustrate support of conventional syntax within tags.
-func ExampleStructTag() {
+func Example_reflect_StructTag() {
 	type S struct {
 		F string `species:"gopher" color:"blue"`
 	}
@@ -24,9 +24,9 @@ func ExampleStructTag() {
 	// blue gopher
 }
 
-// ExampleStructTag_Lookup is an example ported from "reflect" package to
+// Example_reflect_StructTag_Lookup is an example ported from "reflect" package to
 // illustrate support of conventional syntax within tags.
-func ExampleStructTag_Lookup() {
+func Example_reflect_StructTag_Lookup() {
 	type S struct {
 		F0 string `alias:"field_0"`
 		F1 string `alias:""`
@@ -55,8 +55,8 @@ func ExampleStructTag_Lookup() {
 	// (not specified)
 }
 
-// ExampleStructTag_Ex illustrates use of more relaxed syntax within struct tags.
-func ExampleStructTag_Ex() {
+// Example_ex illustrates use of more relaxed syntax within struct tags.
+func Example_ex() {
 	type S struct {
 		F string `
 # this is an example of multiline tag
@@ -114,12 +114,12 @@ key-1='value-1', key-2="value-2"`
 	// value-1 value-2
 }
 
-// ExampleStructTag_Mix illustrate mixed usage of "reflect" package and
+// Example_mix illustrate mixed usage of "reflect" package and
 // structor.Scanner on the same tags.
 //
 // Tags for libs, which uses conventional syntax, could be placed on the first
 // line and all other lines can be used by the structor.Scanner.
-func ExampleStructTag_Mix() {
+func Example_mix() {
 	type S struct {
 		F string `species:"gopher" color:"blue"
 				  key-1: "value-1"
