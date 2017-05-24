@@ -28,6 +28,9 @@ var Pkg = use.FuncMap{
 	"string":    convert,
 	"trimSpace": strings.TrimSpace,
 	"upper":     strings.ToUpper,
+	// func contains(substr, str) bool
+	// Like string.Contains, but with reordered arguments.
+	"contains": contains,
 }
 
 func convert(v interface{}) string {
@@ -40,4 +43,8 @@ func replace(old, new, s string) string {
 
 func split(sep, s string) []string {
 	return strings.Split(s, sep)
+}
+
+func contains(substr, str string) bool {
+	return strings.Contains(str, substr)
 }
