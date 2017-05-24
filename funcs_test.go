@@ -137,6 +137,8 @@ func TestRegexp(t *testing.T) {
 		A [][]string `"xxx-111-yyy-222" | r_match "(\\w+)-(\\d+)" | set`
 		B string     `"because the sky is blue"`
 		C string     `index (.Struct.B | r_match "(\\w+)") 2 1`
+		D string     `.Struct.B | r_match "(\\w+)" | r_indx 2 1`
+		E string     `.Struct.B | r_match "(\\d+)" | r_indx 0 1`
 	}
 	v := &theStruct{}
 	err := testEvaluator.Eval(v, nil)
@@ -149,6 +151,8 @@ func TestRegexp(t *testing.T) {
 		},
 		v.A)
 	assert.Equal(t, "sky", v.C)
+	assert.Equal(t, "sky", v.D)
+	assert.Equal(t, "", v.E)
 }
 
 func TestStrings(t *testing.T) {
