@@ -59,11 +59,13 @@ const WholeTag = ""
 // processed using different EL interpreters.
 //
 //  interpreters - is a map of registered tag names to EL interpreters.
-func NewEvaluator(interpreters Interpreters) Evaluator {
+func NewEvaluator(
+	scanner scanner.Scanner,
+	interpreters Interpreters) Evaluator {
 	if len(interpreters) == 0 {
 		panic("no interpreters registered")
 	}
-	return &evaluator{interpreters}
+	return &evaluator{scanner, interpreters}
 }
 
 // NewDefaultEvaluator returns default Evaluator implementation. Default
@@ -72,12 +74,15 @@ func NewEvaluator(interpreters Interpreters) Evaluator {
 //
 //  funcs - custom functions, available for interpreter;
 func NewDefaultEvaluator(funcs use.FuncMap) Evaluator {
-	return NewEvaluator(Interpreters{
-		"eval": &el.DefaultInterpreter{Funcs: funcs},
-	})
+	return NewEvaluator(
+		scanner.Default,
+		Interpreters{
+			"eval": &el.DefaultInterpreter{Funcs: funcs},
+		})
 }
 
 type evaluator struct {
+	scanner      scanner.Scanner
 	interpreters Interpreters
 }
 
@@ -167,7 +172,7 @@ func (ev evaluator) fieldIntrospect(
 	i int) (fieldDescr, error) {
 	f := typ.Field(i)
 	v := indirect(val.Field(i))
-	tags, err := scanner.Default.Tags(f.Tag)
+	tags, err := ev.scanner.Tags(f.Tag)
 	res := fieldDescr{
 		name:  f.Name,
 		value: v,

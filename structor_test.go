@@ -14,6 +14,7 @@ import (
 	"github.com/nikolay-turpitko/structor/funcs/math"
 	"github.com/nikolay-turpitko/structor/funcs/strings"
 	"github.com/nikolay-turpitko/structor/funcs/use"
+	"github.com/nikolay-turpitko/structor/scanner"
 )
 
 // TestSimple tests simple structor usage: string fields, data from context,
@@ -142,9 +143,11 @@ func (cc) Execute(expr string, _ *el.Context) (interface{}, error) {
 
 // TestCustomInterpretor tests usage of custom interpreter and tag name.
 func TestCustomInterpretor(t *testing.T) {
-	ev := structor.NewEvaluator(structor.Interpreters{
-		"cc": &cc{},
-	})
+	ev := structor.NewEvaluator(
+		scanner.Default,
+		structor.Interpreters{
+			"cc": &cc{},
+		})
 	type theStruct struct {
 		A int `cc:"something"`
 	}
@@ -157,9 +160,11 @@ func TestCustomInterpretor(t *testing.T) {
 // TestWholeTag tests usage of the whole tag value as an expression for custom
 // interpreter.
 func TestWholeTag(t *testing.T) {
-	ev := structor.NewEvaluator(structor.Interpreters{
-		structor.WholeTag: &cc{},
-	})
+	ev := structor.NewEvaluator(
+		scanner.Default,
+		structor.Interpreters{
+			structor.WholeTag: &cc{},
+		})
 	type theStruct struct {
 		A int `this whole string should be processed as an EL expression`
 	}
@@ -172,12 +177,14 @@ func TestWholeTag(t *testing.T) {
 // TestWholeTagAutoEnclose tests usage of the whole tag value as an
 // text/template EL expression with automatic enclosing into delimiters.
 func TestWholeTagAutoEnclose(t *testing.T) {
-	ev := structor.NewEvaluator(structor.Interpreters{
-		structor.WholeTag: &el.DefaultInterpreter{
-			AutoEnclose: true,
-			Funcs:       math.Pkg,
-		},
-	})
+	ev := structor.NewEvaluator(
+		scanner.Default,
+		structor.Interpreters{
+			structor.WholeTag: &el.DefaultInterpreter{
+				AutoEnclose: true,
+				Funcs:       math.Pkg,
+			},
+		})
 	type theStruct struct {
 		A int `set 40`
 		B int `set 2`
@@ -191,15 +198,17 @@ func TestWholeTagAutoEnclose(t *testing.T) {
 
 // Example of usage structor.
 func Example() {
-	ev := structor.NewEvaluator(structor.Interpreters{
-		structor.WholeTag: &el.DefaultInterpreter{
-			AutoEnclose: true,
-			Funcs: use.Packages(
-				use.Pkg{Funcs: math.Pkg},
-				use.Pkg{Funcs: strings.Pkg},
-			),
-		},
-	})
+	ev := structor.NewEvaluator(
+		scanner.Default,
+		structor.Interpreters{
+			structor.WholeTag: &el.DefaultInterpreter{
+				AutoEnclose: true,
+				Funcs: use.Packages(
+					use.Pkg{Funcs: math.Pkg},
+					use.Pkg{Funcs: strings.Pkg},
+				),
+			},
+		})
 	type theStruct struct {
 		A int    `set 40`
 		B int    `set 2`

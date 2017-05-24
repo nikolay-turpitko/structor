@@ -18,24 +18,27 @@ import (
 	"github.com/nikolay-turpitko/structor/funcs/strings"
 	"github.com/nikolay-turpitko/structor/funcs/use"
 	"github.com/nikolay-turpitko/structor/funcs/xpath"
+	"github.com/nikolay-turpitko/structor/scanner"
 )
 
-var testEvaluator = structor.NewEvaluator(structor.Interpreters{
-	structor.WholeTag: &el.DefaultInterpreter{
-		AutoEnclose: true,
-		Funcs: use.Packages(
-			use.Pkg{Prefix: "b_", Funcs: bytes.Pkg},
-			use.Pkg{Prefix: "c_", Funcs: crypt.Pkg},
-			use.Pkg{Prefix: "e_", Funcs: encoding.Pkg},
-			use.Pkg{Prefix: "g_", Funcs: goquery.Pkg},
-			use.Pkg{Prefix: "m_", Funcs: math.Pkg},
-			use.Pkg{Prefix: "o_", Funcs: funcs_os.Pkg},
-			use.Pkg{Prefix: "r_", Funcs: regexp.Pkg},
-			use.Pkg{Prefix: "s_", Funcs: strings.Pkg},
-			use.Pkg{Prefix: "x_", Funcs: xpath.Pkg},
-		),
-	},
-})
+var testEvaluator = structor.NewEvaluator(
+	scanner.Default,
+	structor.Interpreters{
+		structor.WholeTag: &el.DefaultInterpreter{
+			AutoEnclose: true,
+			Funcs: use.Packages(
+				use.Pkg{Prefix: "b_", Funcs: bytes.Pkg},
+				use.Pkg{Prefix: "c_", Funcs: crypt.Pkg},
+				use.Pkg{Prefix: "e_", Funcs: encoding.Pkg},
+				use.Pkg{Prefix: "g_", Funcs: goquery.Pkg},
+				use.Pkg{Prefix: "m_", Funcs: math.Pkg},
+				use.Pkg{Prefix: "o_", Funcs: funcs_os.Pkg},
+				use.Pkg{Prefix: "r_", Funcs: regexp.Pkg},
+				use.Pkg{Prefix: "s_", Funcs: strings.Pkg},
+				use.Pkg{Prefix: "x_", Funcs: xpath.Pkg},
+			),
+		},
+	})
 
 func TestCrypt(t *testing.T) {
 	type theStruct struct {
