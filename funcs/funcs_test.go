@@ -12,9 +12,9 @@ import (
 
 func TestProvide(t *testing.T) {
 	ff := use.Packages(
-		use.Pkg{"", math.Pkg},
-		use.Pkg{"", strings.Pkg},
-		use.Pkg{"my_", use.FuncMap{
+		use.Pkg{Prefix: "", Funcs: math.Pkg},
+		use.Pkg{Prefix: "", Funcs: strings.Pkg},
+		use.Pkg{Prefix: "my_", Funcs: use.FuncMap{
 			"echo": func(s string) string {
 				return s + " " + s
 			},

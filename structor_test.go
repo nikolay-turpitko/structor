@@ -85,9 +85,9 @@ func TestObj(t *testing.T) {
 	}
 	v := &obj{F: &innerSub{}}
 	ev := structor.NewDefaultEvaluator(use.Packages(
-		use.Pkg{"", math.Pkg},
-		use.Pkg{"", encoding.Pkg},
-		use.Pkg{"", strings.Pkg},
+		use.Pkg{Prefix: "", Funcs: math.Pkg},
+		use.Pkg{Prefix: "", Funcs: encoding.Pkg},
+		use.Pkg{Prefix: "", Funcs: strings.Pkg},
 	))
 	err := ev.Eval(v, nil)
 	assert.NoError(t, err)
