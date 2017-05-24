@@ -1,6 +1,9 @@
 package use
 
-import "text/template"
+import (
+	"log"
+	"text/template"
+)
 
 // FuncMap is a template.FuncMap, see docs there. Redefined to minimize imports.
 type FuncMap template.FuncMap
@@ -23,7 +26,11 @@ func Packages(pkgs ...Pkg) FuncMap {
 	m := make(FuncMap, l)
 	for _, p := range pkgs {
 		for nm, f := range p.Funcs {
-			m[p.Prefix+nm] = f
+			name := p.Prefix + nm
+			if f2, ok := m[name]; ok {
+				log.Printf("use: name clash for '%s', %T, %T", name, f, f2)
+			}
+			m[name] = f
 		}
 	}
 	return m
