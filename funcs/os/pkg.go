@@ -18,6 +18,7 @@ var Pkg = use.FuncMap{
 	// func readTxtFile(name string) (string, error)
 	// Reads text file into string.
 	"readTxtFile": readTxtFile,
+	"readAll":     ioutil.ReadAll,
 	// func exec(name string, arg ...interface{}) ([]byte, error)
 	// Executes OS command (process) with given name (path).
 	//

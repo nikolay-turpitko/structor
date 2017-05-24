@@ -146,7 +146,7 @@ func (ev evaluator) eval(s, extra, substruct, subctx interface{}) error {
 
 func (ev evaluator) structIntrospect(
 	s interface{}) (reflect.Value, reflect.Type, error) {
-	v := indirect(reflect.ValueOf(s))
+	v := reflect.Indirect(reflect.ValueOf(s))
 	t := v.Type()
 	if t.Kind() != reflect.Struct {
 		err := fmt.Errorf(
@@ -171,7 +171,7 @@ func (ev evaluator) fieldIntrospect(
 	typ reflect.Type,
 	i int) (fieldDescr, error) {
 	f := typ.Field(i)
-	v := indirect(val.Field(i))
+	v := reflect.Indirect(val.Field(i))
 	tags, err := ev.scanner.Tags(f.Tag)
 	res := fieldDescr{
 		name:  f.Name,
@@ -223,13 +223,6 @@ func reflectSet(v reflect.Value, nv interface{}) (err error) {
 	// Try to convert, in worst case it'll give a panic with suitable message.
 	v.Set(vnv.Convert(vt))
 	return nil
-}
-
-func indirect(v reflect.Value) reflect.Value {
-	for v.Kind() == reflect.Ptr || v.Kind() == reflect.Interface {
-		v = v.Elem()
-	}
-	return v
 }
 
 func byRef(v reflect.Value) interface{} {
