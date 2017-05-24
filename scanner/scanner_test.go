@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/nikolay-turpitko/structor/scanner"
+	"github.com/nikolay-turpitko/structor/testhelper"
 )
 
 func TestScanner(t *testing.T) {
@@ -83,7 +84,7 @@ func TestScanner(t *testing.T) {
 
 	for _, fx := range fix {
 		fx := fx
-		t.Run(fx.fileName, func(t *testing.T) {
+		testhelper.Run(t, fx.fileName, func(t *testing.T) {
 			f, err := os.Open(fx.fileName)
 			defer f.Close()
 			assert.NoError(t, err)
