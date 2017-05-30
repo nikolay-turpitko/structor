@@ -90,6 +90,16 @@ func (ev evaluator) Eval(s, extra interface{}) error {
 	return ev.eval(s, extra, nil, nil)
 }
 
+func (ev evaluator) evalExpr(
+	intrprName, expr string,
+	ctx *el.Context) (interface{}, error) {
+	intrpr, ok := ev.interpreters[intrprName]
+	if !ok {
+		return nil, fmt.Errorf("unknown interpreter: %s", intrprName)
+	}
+	return intrpr.Execute(expr, ctx)
+}
+
 func (ev evaluator) eval(s, extra, substruct, subctx interface{}) error {
 	curr := s
 	if substruct != nil {
@@ -122,6 +132,7 @@ func (ev evaluator) eval(s, extra, substruct, subctx interface{}) error {
 				Struct:   s,
 				Extra:    extra,
 				Sub:      subctx,
+				EvalExpr: ev.evalExpr,
 			}
 			result, err := f.interpreter.Execute(f.expr, ctx)
 			if err != nil {

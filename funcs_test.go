@@ -301,3 +301,18 @@ func TestEmbedded(t *testing.T) {
 	assert.Equal(t, "eee", v.B.E)
 	assert.Equal(t, "fff", v.Embedded.F)
 }
+
+func TestEval(t *testing.T) {
+	type theStruct struct {
+		A string `"m_add 40 2 | set"`
+		B int    `.Struct.A | eval "" | set`
+		C int    `.Extra | eval "" | set`
+		D string `"\"structor\" | s_upper" | eval "" | set`
+	}
+	v := &theStruct{}
+	err := testEvaluator.Eval(v, `len "structor" | set`)
+	assert.NoError(t, err)
+	assert.Equal(t, 42, v.B)
+	assert.Equal(t, 8, v.C)
+	assert.Equal(t, "STRUCTOR", v.D)
+}

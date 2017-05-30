@@ -30,6 +30,11 @@ the currently processed field. Special case: if annotated field is struct and
 result can not be converted to it, then result stored into `.Sub`, and
 evaluation executed recursively on the inner struct.
 
+Another special custom EL function is "eval". This function allows to invoke
+interpreter from within EL expression to evaluate another expression. Example
+usage is when expression of interest come from another field or extra context.
+For instance, it can come from configuration file.
+
 Simple namespaces and "import" mechanism provided for custom functions - whole
 map of custom functions can be combined from several maps with (optional)
 custom prefixes, prepended to every function name within map. Maps for provided
@@ -72,9 +77,7 @@ It's simpler to illustrate on examples, see examples in tests and
 - [x] exec - invoke external process (shell, for instance)
 - [x] encrypt/decrypt
 - [x] env
-- [ ] eval - get expression from other field (`eval "interpreter-name"
-  .Extra.Expression`) - ? Use case: expressions in config file (arithmetics,
-  string concatenation, etc).
+- [x] eval
 - [x] fields
 - [x] readFile - read file content to []byte or string
 - [x] goquery

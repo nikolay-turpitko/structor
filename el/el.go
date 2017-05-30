@@ -38,10 +38,44 @@ type Context struct {
 	Extra interface{}
 	// Temporary partial result evaluated on the current substruct.
 	Sub interface{}
+	// Function, which knows how to evaluate expression with different
+	// interpreter.
+	EvalExpr EvalExprFunc
 }
+
+// EvalExprFunc is a type of function, which knows how to evaluate given
+// expression using given interpreter name and context.
+// It is used to implement special predefined custom function "eval", available
+// within EL.
+type EvalExprFunc func(
+	interpreterName, expression string,
+	context *Context) (interface{}, error)
 
 // DefaultInterpreter is a default implementation of Interpreter,
 // which is based on "text/template".
+//
+// Besides Funcs passed to it, DefaultInterpreter creates these additional
+// custom function for use in EL expressions:
+//
+//  - set
+//  - eval.
+//
+// Function "set" with signature `func (r interface{}) interface{}` passes
+// argument to result, but stores it internally to be used as an expression
+// result. It's intention is to set expression result to some concrete type,
+// other than string (which is only type "text/template" allows by design).
+// Simply put, when you interested in interface{} result and not in it's
+// default string representation, use "set" to store result at the end of
+// expression.
+//
+// Function "eval" with signature `func(intrpr, expr string) (interface{}, error)`
+// can be used to evaluate given expression with given interpreter.
+// This can be useful to evaluate expression passed as a string within context.
+// This feature works with support of the calling code, which passes actual
+// implementation of the "eval" function in Context.EvalExpr().
+// Interpreter name should be known to calling code. For example, for known
+// implementation (structor.NewEvaluator()) interpreter name is a tag name,
+// onto which given interpreter is mapped during creation of evaluator.
 type DefaultInterpreter struct {
 	// Custom functions, available for use in EL expressions.
 	Funcs use.FuncMap
@@ -68,6 +102,9 @@ func (i *DefaultInterpreter) Execute(
 	funcs["set"] = func(r interface{}) interface{} {
 		res = r
 		return r
+	}
+	funcs["eval"] = func(intrpr, expr string) (interface{}, error) {
+		return ctx.EvalExpr(intrpr, expr, ctx)
 	}
 	templName := fmt.Sprintf("<<%s>>", ctx.LongName)
 	left := i.LeftDelim
