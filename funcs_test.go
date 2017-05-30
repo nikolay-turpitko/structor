@@ -4,6 +4,7 @@ import (
 	"os"
 	"testing"
 
+	multierror "github.com/hashicorp/go-multierror"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/nikolay-turpitko/structor"
@@ -162,6 +163,7 @@ func TestStrings(t *testing.T) {
 		C []string `set (s_split "|" "111|222")`
 		D string   `s_trimSpace "  xxx  "`
 		E string   `"o-!-o" | s_replace "o" "0"`
+		F bool     `"structor" | s_contains "tru" | set`
 	}
 	v := &theStruct{}
 	err := testEvaluator.Eval(v, nil)
@@ -171,6 +173,7 @@ func TestStrings(t *testing.T) {
 	assert.Equal(t, []string{"111", "222"}, v.C)
 	assert.Equal(t, "xxx", v.D)
 	assert.Equal(t, "0-!-0", v.E)
+	assert.True(t, v.F)
 }
 
 func TestXPath(t *testing.T) {
@@ -205,7 +208,7 @@ func TestXPath(t *testing.T) {
 					{{/* */}}`
 		A     string `.Extra.F1 | b_reader | x_xpath "//span"`
 		B     string `index (.Extra.F1 | b_reader | x_xpath "//a/@href" | s_split ":") 1`
-		D     string `index (.Extra.F1 | b_reader | x_xpath "//a" | s_fields) 1`
+		D     string `index (.Extra.F1 | b_reader | x_xpathStrict "//a" | s_fields) 1`
 		E     string `index (.Extra.F1 | b_reader | x_xpath "//a" | r_match "(\\w+)") 2 1`
 		H     string `.Extra.F1 | b_reader | x_xpath "//*[@class='ggg']" | s_trimSpace`
 		K     string `.Struct.HTML | s_reader | x_xpath "//div/@attr"`
@@ -221,6 +224,17 @@ func TestXPath(t *testing.T) {
 	assert.Equal(t, "hhh", v.H)
 	assert.Equal(t, "some attr", v.K)
 	assert.Equal(t, "zzz@zzz.com", v.Email)
+	type theStruct2 struct {
+		A string `.Extra.F1 | b_reader | x_xpath "//div.absent1"`
+		B string `.Extra.F1 | b_reader | x_xpathStrict "//div.absent2"`
+	}
+	v2 := &theStruct2{}
+	err = testEvaluator.Eval(v2, extra)
+	assert.Error(t, err)
+	wrappedErrors := err.(*multierror.Error).WrappedErrors()
+	assert.Equal(t, 1, len(wrappedErrors))
+	assert.NotContains(t, wrappedErrors[0].Error(), "xpath: path does not evaluate to string: //div.absent1")
+	assert.Contains(t, wrappedErrors[0].Error(), "xpath: path does not evaluate to string: //div.absent2")
 }
 
 func TestGoquery(t *testing.T) {
