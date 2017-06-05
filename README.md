@@ -42,7 +42,8 @@ functions placed into separate Go packages and can be imported as needed. When
 used with [Glide](https://github.com/Masterminds/glide), they can be imported
 as subpackages, allowing to optimize dependencies.
 
-It's simpler to illustrate on examples, see examples in tests and
+It's simpler to illustrate on examples, see examples in tests
+([funcs_test.go](funcs_test.go), [goel_funcs_test.go](goel_funcs_test.go)) and
 [Godoc](http://godoc.org/github.com/nikolay-turpitko/structor).
 
 ## Possible use cases
