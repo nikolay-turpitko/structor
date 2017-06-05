@@ -1,5 +1,12 @@
 // +build go1.7
 
+/*
+Package goel provides an implementation of expression language (EL) interpreter
+for struct tags.
+
+This implementation is based on "github.com/apaxa-go/eval" and enables usage of
+Go expressions in structor.
+*/
 package goel
 
 import (
