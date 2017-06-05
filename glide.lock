@@ -1,10 +1,22 @@
-hash: bfa9ed654bc1f0425db39e1da20a9f666c35c8ddad55465aeccea19f5625bd26
-updated: 2017-05-21T23:37:50.042861018+07:00
+hash: 82c3f302cd288e4593326bd4a31468b68e4af2c3aa2ee7563509a240d6c54a4e
+updated: 2017-06-06T00:17:01.080327596+07:00
 imports:
 - name: github.com/andybalholm/cascadia
   version: 349dd0209470eabd9514242c688c403c0926d266
+- name: github.com/apaxa-go/eval
+  version: 777d9813105ac8851cf569cf9310a0a22b66c901
+- name: github.com/apaxa-go/helper
+  version: 118675ab0b5f45e739442e7c9fa99f780f1eb9d9
+  subpackages:
+  - goh/asth
+  - goh/constanth
+  - goh/tokenh
+  - mathh
+  - reflecth
+  - strconvh
+  - stringsh
 - name: github.com/gtank/cryptopasta
-  version: bc3a108a5776376aa811eea34b93383837994340
+  version: 1f550f6f2f69009f6ae57347c188e0a67cd4e500
 - name: github.com/hashicorp/errwrap
   version: 7554cd9344cec97297fa6649b055a8c98c2a1e55
 - name: github.com/hashicorp/go-multierror
@@ -12,15 +24,20 @@ imports:
 - name: github.com/PuerkitoBio/goquery
   version: e1271ee34c6a305e38566ecd27ae374944907ee9
 - name: golang.org/x/crypto
-  version: 0fe963104e9d1877082f8fb38f816fcd97eb1d10
+  version: e1a4589e7d3ea14a3352255d04b6f1a418845e5e
   subpackages:
   - bcrypt
   - blowfish
 - name: golang.org/x/net
-  version: 513929065c19401a1c7b76ecd942f9f86a0c061b
+  version: 59a0b19b5533c7977ddeb86b017bf507ed407b12
   subpackages:
   - html
   - html/atom
+- name: golang.org/x/text
+  version: ccbd3f7822129ff389f8ca4858a9b9d4d910531c
+  subpackages:
+  - transform
+  - unicode/norm
 - name: gopkg.in/xmlpath.v2
   version: 860cbeca3ebcc600db0b213c0e83ad6ce91f5739
 testImports:

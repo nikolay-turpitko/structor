@@ -95,8 +95,7 @@ It's simpler to illustrate on examples, see examples in tests and
 
 ## Other ideas
 
-- [ ] go expressions ("go/types".Eval()) as EL - ? Can be simpler and less
-  powerful than default EL interpreter.
+- [x] go expressions (using "github.com/apaxa-go/eval")
 
 ## Godoc
 

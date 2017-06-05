@@ -58,7 +58,7 @@ type EvalExprFunc func(
 // custom function for use in EL expressions:
 //
 //  - set
-//  - eval.
+//  - eval
 //
 // Function "set" with signature `func (r interface{}) interface{}` passes
 // argument to result, but stores it internally to be used as an expression
@@ -76,6 +76,8 @@ type EvalExprFunc func(
 // Interpreter name should be known to calling code. For example, for known
 // implementation (structor.NewEvaluator()) interpreter name is a tag name,
 // onto which given interpreter is mapped during creation of evaluator.
+//
+// Restrictions of "text/template" package applied to custom functions.
 type DefaultInterpreter struct {
 	// Custom functions, available for use in EL expressions.
 	Funcs use.FuncMap
