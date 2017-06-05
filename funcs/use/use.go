@@ -1,3 +1,6 @@
+/*
+Package use provides simple namespaces for custom functions.
+*/
 package use
 
 import (
@@ -15,9 +18,12 @@ type FuncMap template.FuncMap
 // using custom rules. This can be used to adapt names to use with different
 // interpreters.
 type Pkg struct {
-	Prefix  string
+	// Prefix added to function name (can be empty).
+	Prefix string
+	// Function to translate function name (can be nil).
 	MapName func(string) string
-	Funcs   FuncMap
+	// Map of functions.
+	Funcs FuncMap
 }
 
 // Packages collects functions from all "packages" in arguments into one
