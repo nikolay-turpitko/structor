@@ -234,14 +234,14 @@ func Example() {
 	// STRUCTOR
 }
 
-// ExampleComplex is a more complex example of structor's usage.
+// Example_complex is a more complex example of structor's usage.
 //
 // Two interpreters are registered to process correspondent struct's tags.
 // Custom strings functions are registered with custom prefix and name translations.
 // EL uses value from other tag via execution context.
 // One interpreter calls another to evaluate expression, got from some tag.
 // Custom quotation marks are used in tags, when it's convenient.
-func ExampleComplex() {
+func Example_complex() {
 	ev := structor.NewEvaluator(
 		scanner.Default,
 		structor.Interpreters{
