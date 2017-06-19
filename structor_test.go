@@ -27,6 +27,7 @@ func TestSimple(t *testing.T) {
 		D string `eval:"{{.Struct.C}}"`
 		E string `eval:"eee"`
 		F string `eval:"{{.Struct.E}} + {{.Extra.X}}"`
+		G string `eval:""`
 	}
 	v := &simple{
 		A: "init A",
@@ -57,6 +58,7 @@ func TestSimple(t *testing.T) {
 	assert.Equal(t, "extra field X", v.D)
 	assert.Equal(t, "eee", v.E)
 	assert.Equal(t, "eee + extra field X", v.F)
+	assert.Equal(t, "", v.G)
 }
 
 // TestObj tests structor usage with non-string fields, type conversion,
@@ -83,8 +85,10 @@ func TestObj(t *testing.T) {
 			J string `eval:"jjj"`
 		}
 		K inner
+		N interface{} `eval:"{{set nil}}"`
+		P string      `eval:{{or .Val "second"}}`
 	}
-	v := &obj{F: &innerSub{}}
+	v := &obj{F: &innerSub{}, N: "xxx", P: "first"}
 	ev := structor.NewDefaultEvaluator(use.Packages(
 		use.Pkg{Prefix: "", Funcs: math.Pkg},
 		use.Pkg{Prefix: "", Funcs: encoding.Pkg},
@@ -103,6 +107,8 @@ func TestObj(t *testing.T) {
 	assert.Equal(t, "\n", v.H)
 	assert.Equal(t, "jjj", v.I.J)
 	assert.Equal(t, "LLL", v.K.L)
+	assert.Nil(t, v.N)
+	assert.Equal(t, "first", v.P)
 }
 
 // TestError tests structor's error handling.

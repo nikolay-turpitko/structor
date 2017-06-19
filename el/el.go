@@ -101,8 +101,10 @@ func (i *DefaultInterpreter) Execute(
 		funcs[k] = v
 	}
 	var res interface{}
+	resultEvaluated := false
 	funcs["set"] = func(r interface{}) interface{} {
 		res = r
+		resultEvaluated = true
 		return r
 	}
 	funcs["eval"] = func(intrpr, expr string) (interface{}, error) {
@@ -135,7 +137,7 @@ func (i *DefaultInterpreter) Execute(
 	if err != nil {
 		return nil, err
 	}
-	if res != nil {
+	if resultEvaluated {
 		return res, nil
 	}
 	return buf.String(), nil

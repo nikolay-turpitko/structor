@@ -138,7 +138,7 @@ func (ev evaluator) eval(s, extra, substruct, subctx interface{}) error {
 			if err != nil {
 				return err
 			}
-			err = reflectSet(f.value, result)
+			err = reflectSet(f.value, f.typ, result)
 			if err == nil {
 				return nil
 			}
@@ -174,6 +174,7 @@ type fieldDescr struct {
 	expr        string
 	interpreter el.Interpreter
 	value       reflect.Value
+	typ         reflect.Type
 	tags        map[string]string
 }
 
@@ -187,6 +188,7 @@ func (ev evaluator) fieldIntrospect(
 	res := fieldDescr{
 		name:  f.Name,
 		value: v,
+		typ:   f.Type,
 		tags:  tags,
 	}
 	if err != nil {
@@ -215,7 +217,7 @@ func (ev evaluator) fieldIntrospect(
 
 var errTryRecursive = errors.New("try recursive") // sentinel error
 
-func reflectSet(v reflect.Value, nv interface{}) (err error) {
+func reflectSet(v reflect.Value, vt reflect.Type, nv interface{}) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			var ok bool
@@ -224,14 +226,17 @@ func reflectSet(v reflect.Value, nv interface{}) (err error) {
 			}
 		}
 	}()
+	if nv == nil {
+		v.Set(reflect.Zero(vt))
+		return nil
+	}
 	vnv := reflect.ValueOf(nv)
-	vt := v.Type()
 	if !vnv.Type().ConvertibleTo(vt) &&
 		v.Kind() == reflect.Struct {
 		// Try to recursively eval tags on inner struct.
 		return errTryRecursive
 	}
-	// Try to convert, in worst case it'll give a panic with suitable message.
+	// Try to convert, it may give a panic with suitable message.
 	v.Set(vnv.Convert(vt))
 	return nil
 }
