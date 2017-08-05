@@ -202,6 +202,32 @@ func TestWholeTagAutoEnclose(t *testing.T) {
 	assert.Equal(t, 42, v.C)
 }
 
+func TestNonMutatingEvaluator(t *testing.T) {
+	ev := structor.NewNonmutatingEvaluator(
+		scanner.Default,
+		structor.Interpreters{
+			structor.WholeTag: &el.DefaultInterpreter{
+				AutoEnclose: true,
+				Funcs:       math.Pkg,
+			},
+		})
+	type theStruct struct {
+		A int     `set 40`
+		B int     `set 2`
+		C int     `set (add .Struct.A .Struct.B)`
+		D *int    `set 5`
+		E *string `set "xxx"`
+	}
+	v := &theStruct{}
+	err := ev.Eval(v, nil)
+	assert.NoError(t, err)
+	assert.Equal(t, 0, v.A)
+	assert.Equal(t, 0, v.B)
+	assert.Equal(t, 0, v.C)
+	assert.Nil(t, v.D)
+	assert.Nil(t, v.E)
+}
+
 // Example is an example of structor's usage.
 //
 // Whole struct tag string is used for EL expression.

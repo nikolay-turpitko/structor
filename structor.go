@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"strings"
 
 	multierror "github.com/hashicorp/go-multierror"
 
@@ -58,6 +59,7 @@ const WholeTag = ""
 // expression per struct field). Different fields of the same struct can be
 // processed using different EL interpreters.
 //
+//  scanner - is a scanner implementation to be used to scan tags.
 //  interpreters - is a map of registered tag names to EL interpreters.
 func NewEvaluator(
 	scanner scanner.Scanner,
@@ -65,7 +67,7 @@ func NewEvaluator(
 	if len(interpreters) == 0 {
 		panic("no interpreters registered")
 	}
-	return &evaluator{scanner, interpreters}
+	return &evaluator{scanner, interpreters, false}
 }
 
 // NewDefaultEvaluator returns default Evaluator implementation. Default
@@ -81,9 +83,26 @@ func NewDefaultEvaluator(funcs use.FuncMap) Evaluator {
 		})
 }
 
+// NewNonmutatingEvaluator creates Evaluator implementation which does not
+// change original structure (does not save evaluated results) itself.
+// Though, interpreters can change structures' fields as a side effect.
+//
+// See NewEvaluator() for additional information.
+//
+// BUG: does not visit embedded structs.
+func NewNonmutatingEvaluator(
+	scanner scanner.Scanner,
+	interpreters Interpreters) Evaluator {
+	if len(interpreters) == 0 {
+		panic("no interpreters registered")
+	}
+	return &evaluator{scanner, interpreters, true}
+}
+
 type evaluator struct {
 	scanner      scanner.Scanner
 	interpreters Interpreters
+	nonmutating  bool
 }
 
 func (ev evaluator) Eval(s, extra interface{}) error {
@@ -115,6 +134,10 @@ func (ev evaluator) eval(s, extra, substruct, subctx interface{}) error {
 			f, err := ev.fieldIntrospect(val, typ, i)
 			longName := fmt.Sprintf("%T.%s", curr, f.name)
 			if err != nil {
+				if ev.nonmutating &&
+					strings.HasSuffix(err.Error(), "is not settable") {
+					return nil
+				}
 				return fmt.Errorf("structor: <<%s>>: %v", longName, err)
 			}
 			if f.expr == "" {
@@ -137,6 +160,9 @@ func (ev evaluator) eval(s, extra, substruct, subctx interface{}) error {
 			result, err := f.interpreter.Execute(f.expr, ctx)
 			if err != nil {
 				return err
+			}
+			if ev.nonmutating {
+				return nil
 			}
 			err = reflectSet(f.value, f.typ, result)
 			if err == nil {
