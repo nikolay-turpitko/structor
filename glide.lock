@@ -1,12 +1,12 @@
 hash: 82c3f302cd288e4593326bd4a31468b68e4af2c3aa2ee7563509a240d6c54a4e
-updated: 2017-08-06T13:16:20.566379644+07:00
+updated: 2018-01-17T01:20:13.704337+07:00
 imports:
 - name: github.com/andybalholm/cascadia
   version: 349dd0209470eabd9514242c688c403c0926d266
 - name: github.com/apaxa-go/eval
-  version: 777d9813105ac8851cf569cf9310a0a22b66c901
+  version: 1d18b251d6795e462ef99e1cd2d0c88f64a0918b
 - name: github.com/apaxa-go/helper
-  version: 118675ab0b5f45e739442e7c9fa99f780f1eb9d9
+  version: d490df1afeac699ea254d8c3840872b4b7076534
   subpackages:
   - goh/asth
   - goh/constanth
@@ -15,26 +15,27 @@ imports:
   - reflecth
   - strconvh
   - stringsh
+  - unicodeh
 - name: github.com/gtank/cryptopasta
   version: 1f550f6f2f69009f6ae57347c188e0a67cd4e500
 - name: github.com/hashicorp/errwrap
   version: 7554cd9344cec97297fa6649b055a8c98c2a1e55
 - name: github.com/hashicorp/go-multierror
-  version: 83588e72410abfbe4df460eeb6f30841ae47d4c4
+  version: b7773ae218740a7be65057fc60b366a49b538a44
 - name: github.com/PuerkitoBio/goquery
-  version: e1271ee34c6a305e38566ecd27ae374944907ee9
+  version: a41cf096e64e3752d7683898d5746bc0b98ee213
 - name: golang.org/x/crypto
-  version: 42ff06aea7c329876e5a0fe94acc96902accf0ad
+  version: 13931e22f9e72ea58bb73048bc752b48c6d4d4ac
   subpackages:
   - bcrypt
   - blowfish
 - name: golang.org/x/net
-  version: f5079bd7f6f74e23c4d65efa0f4ce14cbd6a3c0f
+  version: 5ccada7d0a7ba9aeb5d3aca8d3501b4c2a509fec
   subpackages:
   - html
   - html/atom
 - name: golang.org/x/text
-  version: 3bd178b88a8180be2df394a1fbb81313916f0e7b
+  version: e19ae1496984b1c655b8044a65c0300a3c878dd3
   subpackages:
   - transform
   - unicode/norm
@@ -42,14 +43,14 @@ imports:
   version: 860cbeca3ebcc600db0b213c0e83ad6ce91f5739
 testImports:
 - name: github.com/davecgh/go-spew
-  version: 6d212800a42e8ab5c146b8ace3490ee17e5225f9
+  version: ecdeabc65495df2dec95d7c4a4c3e021903035e5
   subpackages:
   - spew
 - name: github.com/pmezard/go-difflib
-  version: d8ed2627bdf02c080bf22230dbb337003b7aba2d
+  version: 792786c7400a136282c1664665ae0a8db921c6c2
   subpackages:
   - difflib
 - name: github.com/stretchr/testify
-  version: 69483b4bd14f5845b5a1e55bca19e954e827f1d0
+  version: b91bfb9ebec76498946beb6af7c0230c7cc7ba6c
   subpackages:
   - assert

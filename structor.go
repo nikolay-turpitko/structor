@@ -64,10 +64,17 @@ const WholeTag = ""
 func NewEvaluator(
 	scanner scanner.Scanner,
 	interpreters Interpreters) Evaluator {
+	return NewEvaluatorWithOptions(scanner, interpreters, Options{})
+}
+
+func NewEvaluatorWithOptions(
+	scanner scanner.Scanner,
+	interpreters Interpreters,
+	options Options) Evaluator {
 	if len(interpreters) == 0 {
 		panic("no interpreters registered")
 	}
-	return &evaluator{scanner, interpreters, false}
+	return &evaluator{scanner, interpreters, options}
 }
 
 // NewDefaultEvaluator returns default Evaluator implementation. Default
@@ -93,16 +100,18 @@ func NewDefaultEvaluator(funcs use.FuncMap) Evaluator {
 func NewNonmutatingEvaluator(
 	scanner scanner.Scanner,
 	interpreters Interpreters) Evaluator {
-	if len(interpreters) == 0 {
-		panic("no interpreters registered")
-	}
-	return &evaluator{scanner, interpreters, true}
+	return NewEvaluatorWithOptions(scanner, interpreters, Options{NonMutating: true})
 }
 
 type evaluator struct {
 	scanner      scanner.Scanner
 	interpreters Interpreters
-	nonmutating  bool
+	options      Options
+}
+
+type Options struct {
+	NonMutating    bool
+	VisitEmptyTags bool
 }
 
 func (ev evaluator) Eval(s, extra interface{}) error {
@@ -134,7 +143,7 @@ func (ev evaluator) eval(s, extra, substruct, subctx interface{}) error {
 			f, err := ev.fieldIntrospect(val, typ, i)
 			longName := fmt.Sprintf("%T.%s", curr, f.name)
 			if err != nil {
-				if ev.nonmutating &&
+				if ev.options.NonMutating &&
 					strings.HasSuffix(err.Error(), "is not settable") {
 					return nil
 				}
@@ -145,7 +154,9 @@ func (ev evaluator) eval(s, extra, substruct, subctx interface{}) error {
 					// process embedded struct without tag
 					return ev.eval(s, extra, byRef(f.value), nil)
 				}
-				return nil
+				if !ev.options.VisitEmptyTags {
+					return nil
+				}
 			}
 			ctx := &el.Context{
 				Name:     f.name,
@@ -161,7 +172,7 @@ func (ev evaluator) eval(s, extra, substruct, subctx interface{}) error {
 			if err != nil {
 				return err
 			}
-			if ev.nonmutating {
+			if ev.options.NonMutating {
 				return nil
 			}
 			err = reflectSet(f.value, f.typ, result)
