@@ -150,9 +150,15 @@ func (ev evaluator) eval(s, extra, substruct, subctx interface{}) error {
 				return fmt.Errorf("structor: <<%s>>: %v", longName, err)
 			}
 			if f.expr == "" {
-				if f.value.Kind() == reflect.Struct {
+				v := f.value
+				k := v.Kind()
+				if k == reflect.Interface {
+					v = v.Elem()
+					k = reflect.Indirect(v).Kind()
+				}
+				if k == reflect.Struct {
 					// process embedded struct without tag
-					return ev.eval(s, extra, byRef(f.value), nil)
+					return ev.eval(s, extra, byRef(v), nil)
 				}
 				if !ev.options.VisitEmptyTags {
 					return nil
