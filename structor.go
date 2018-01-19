@@ -143,6 +143,9 @@ func (ev evaluator) eval(s, extra, substruct, subctx interface{}) error {
 			if err != nil {
 				return fmt.Errorf("structor: <<%s>>: %v", longName, err)
 			}
+			if !f.value.IsValid() || !f.settable {
+				return nil
+			}
 			var result interface{}
 			if f.expr != "" || ev.options.EvalEmptyTags {
 				ctx := &el.Context{
@@ -153,9 +156,7 @@ func (ev evaluator) eval(s, extra, substruct, subctx interface{}) error {
 					Extra:    extra,
 					Sub:      subctx,
 					EvalExpr: ev.evalExpr,
-				}
-				if f.value.IsValid() {
-					ctx.Val = f.value.Interface()
+					Val:      f.value.Interface(),
 				}
 				result, err = f.interpreter.Execute(f.expr, ctx)
 				if err != nil {
