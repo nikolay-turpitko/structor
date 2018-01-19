@@ -16,10 +16,8 @@ reading from files, shell invocation, etc.
 package structor
 
 import (
-	"errors"
 	"fmt"
 	"reflect"
-	"strings"
 
 	multierror "github.com/hashicorp/go-multierror"
 
@@ -110,11 +108,15 @@ type evaluator struct {
 }
 
 type Options struct {
-	NonMutating    bool
-	VisitEmptyTags bool
+	NonMutating             bool
+	IgnoreNotSettableErrors bool
+	EvalEmptyTags           bool
 }
 
 func (ev evaluator) Eval(s, extra interface{}) error {
+	if ev.options.NonMutating {
+		ev.options.IgnoreNotSettableErrors = true
+	}
 	return ev.eval(s, extra, nil, nil)
 }
 
@@ -143,53 +145,44 @@ func (ev evaluator) eval(s, extra, substruct, subctx interface{}) error {
 			f, err := ev.fieldIntrospect(val, typ, i)
 			longName := fmt.Sprintf("%T.%s", curr, f.name)
 			if err != nil {
-				if ev.options.NonMutating &&
-					strings.HasSuffix(err.Error(), "is not settable") {
-					return nil
-				}
 				return fmt.Errorf("structor: <<%s>>: %v", longName, err)
 			}
-			if f.expr == "" {
-				v := f.value
-				k := v.Kind()
-				if k == reflect.Interface {
-					v = v.Elem()
-					k = reflect.Indirect(v).Kind()
+			var result interface{}
+			if f.expr != "" || ev.options.EvalEmptyTags {
+				ctx := &el.Context{
+					Name:     f.name,
+					LongName: longName,
+					Tags:     f.tags,
+					Struct:   s,
+					Extra:    extra,
+					Sub:      subctx,
+					EvalExpr: ev.evalExpr,
 				}
-				if k == reflect.Struct {
-					// process embedded struct without tag
-					return ev.eval(s, extra, byRef(v), nil)
+				if f.value.IsValid() {
+					ctx.Val = f.value.Interface()
 				}
-				if !ev.options.VisitEmptyTags {
-					return nil
+				result, err = f.interpreter.Execute(f.expr, ctx)
+				if err != nil {
+					return err
+				}
+				if !ev.options.NonMutating {
+					err := reflectSet(f.value, f.typ, result)
+					if err != nil {
+						return fmt.Errorf("structor: <<%s>>: %v", longName, err)
+					}
 				}
 			}
-			ctx := &el.Context{
-				Name:     f.name,
-				LongName: longName,
-				Val:      f.value.Interface(),
-				Tags:     f.tags,
-				Struct:   s,
-				Extra:    extra,
-				Sub:      subctx,
-				EvalExpr: ev.evalExpr,
+			v := f.value
+			k := v.Kind()
+			if k == reflect.Interface {
+				v = v.Elem()
+				k = reflect.Indirect(v).Kind()
 			}
-			result, err := f.interpreter.Execute(f.expr, ctx)
-			if err != nil {
-				return err
+			if k == reflect.Struct {
+				// process embedded struct with tag
+				return ev.eval(s, extra, byRef(v), result)
 			}
-			if ev.options.NonMutating {
-				return nil
-			}
-			err = reflectSet(f.value, f.typ, result)
-			if err == nil {
-				return nil
-			}
-			if err != errTryRecursive {
-				return fmt.Errorf("structor: <<%s>>: %v", longName, err)
-			}
-			// process embedded struct with tag
-			return ev.eval(s, extra, byRef(f.value), result)
+			return nil
 		}()
 		if err != nil {
 			merr = multierror.Append(merr, err)
@@ -238,8 +231,10 @@ func (ev evaluator) fieldIntrospect(
 		return res, err
 	}
 	if !v.CanSet() && (!v.CanAddr() || !v.Addr().CanSet()) {
-		err := fmt.Errorf("structor: %s is not settable", f.Name)
-		return res, err
+		if !ev.options.IgnoreNotSettableErrors {
+			err := fmt.Errorf("structor: %s is not settable", f.Name)
+			return res, err
+		}
 	}
 	for k, t := range tags {
 		if intr, ok := ev.interpreters[k]; ok {
@@ -258,8 +253,6 @@ func (ev evaluator) fieldIntrospect(
 	return res, nil
 }
 
-var errTryRecursive = errors.New("try recursive") // sentinel error
-
 func reflectSet(v reflect.Value, vt reflect.Type, nv interface{}) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -270,14 +263,15 @@ func reflectSet(v reflect.Value, vt reflect.Type, nv interface{}) (err error) {
 		}
 	}()
 	if nv == nil {
-		v.Set(reflect.Zero(vt))
+		if v.IsValid() {
+			v.Set(reflect.Zero(vt))
+		}
 		return nil
 	}
 	vnv := reflect.ValueOf(nv)
 	if !vnv.Type().ConvertibleTo(vt) &&
 		v.Kind() == reflect.Struct {
-		// Try to recursively eval tags on inner struct.
-		return errTryRecursive
+		return nil
 	}
 	// Try to convert, it may give a panic with suitable message.
 	v.Set(vnv.Convert(vt))
