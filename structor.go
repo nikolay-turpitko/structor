@@ -108,15 +108,11 @@ type evaluator struct {
 }
 
 type Options struct {
-	NonMutating             bool
-	IgnoreNotSettableErrors bool
-	EvalEmptyTags           bool
+	NonMutating   bool
+	EvalEmptyTags bool
 }
 
 func (ev evaluator) Eval(s, extra interface{}) error {
-	if ev.options.NonMutating {
-		ev.options.IgnoreNotSettableErrors = true
-	}
 	return ev.eval(s, extra, nil, nil)
 }
 
@@ -165,7 +161,7 @@ func (ev evaluator) eval(s, extra, substruct, subctx interface{}) error {
 				if err != nil {
 					return err
 				}
-				if !ev.options.NonMutating {
+				if !ev.options.NonMutating && f.settable {
 					err := reflectSet(f.value, f.typ, result)
 					if err != nil {
 						return fmt.Errorf("structor: <<%s>>: %v", longName, err)
@@ -212,6 +208,7 @@ type fieldDescr struct {
 	value       reflect.Value
 	typ         reflect.Type
 	tags        map[string]string
+	settable    bool
 }
 
 func (ev evaluator) fieldIntrospect(
@@ -230,12 +227,7 @@ func (ev evaluator) fieldIntrospect(
 	if err != nil {
 		return res, err
 	}
-	if !v.CanSet() && (!v.CanAddr() || !v.Addr().CanSet()) {
-		if !ev.options.IgnoreNotSettableErrors {
-			err := fmt.Errorf("structor: %s is not settable", f.Name)
-			return res, err
-		}
-	}
+	res.settable = v.CanSet() || (v.CanAddr() && v.Addr().CanSet())
 	for k, t := range tags {
 		if intr, ok := ev.interpreters[k]; ok {
 			delete(tags, k)
