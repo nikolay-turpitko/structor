@@ -21,6 +21,16 @@ type Interpreter interface {
 	Execute(expression string, ctx *Context) (result interface{}, err error)
 }
 
+// The InterpreterFunc type is an adapter to allow the use of ordinary
+// functions as EL interpreter. If f is a function with the appropriate
+// signature, InterpreterFunc(f) is a Interpreter that calls f.
+type InterpreterFunc func(string, *Context) (interface{}, error)
+
+// Execute calls f(s, ctx).
+func (f InterpreterFunc) Execute(s string, ctx *Context) (interface{}, error) {
+	return f(s, ctx)
+}
+
 // Context is a context, passed to interpreter.
 // It contains information about currently processed field, struct and extra.
 type Context struct {

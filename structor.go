@@ -18,6 +18,7 @@ package structor
 import (
 	"fmt"
 	"reflect"
+	"unsafe"
 
 	multierror "github.com/hashicorp/go-multierror"
 
@@ -51,7 +52,7 @@ type Interpreters map[string]el.Interpreter
 // WholeTag interpreter is probed after all other registered interpreters.
 const WholeTag = ""
 
-// NewEvaluator returns Evaluator with desired settings.
+// NewEvaluatorWithOptions returns Evaluator with desired settings.
 //
 // Only first tag with EL will be recognized and used (only one
 // expression per struct field). Different fields of the same struct can be
@@ -59,12 +60,7 @@ const WholeTag = ""
 //
 //  scanner - is a scanner implementation to be used to scan tags.
 //  interpreters - is a map of registered tag names to EL interpreters.
-func NewEvaluator(
-	scanner scanner.Scanner,
-	interpreters Interpreters) Evaluator {
-	return NewEvaluatorWithOptions(scanner, interpreters, Options{})
-}
-
+//  options - is an Options structure.
 func NewEvaluatorWithOptions(
 	scanner scanner.Scanner,
 	interpreters Interpreters,
@@ -73,6 +69,14 @@ func NewEvaluatorWithOptions(
 		panic("no interpreters registered")
 	}
 	return &evaluator{scanner, interpreters, options}
+}
+
+// NewEvaluator returns Evaluator with desired settings.
+// It invokes NewEvaluatorWithOptions with default options.
+func NewEvaluator(
+	scanner scanner.Scanner,
+	interpreters Interpreters) Evaluator {
+	return NewEvaluatorWithOptions(scanner, interpreters, Options{})
 }
 
 // NewDefaultEvaluator returns default Evaluator implementation. Default
@@ -89,8 +93,13 @@ func NewDefaultEvaluator(funcs use.FuncMap) Evaluator {
 }
 
 // NewNonmutatingEvaluator creates Evaluator implementation which does not
-// change original structure (does not save evaluated results) itself.
-// Though, interpreters can change structures' fields as a side effect.
+// change original structure (does not save evaluated results) itself.  Though,
+// interpreters can change structures' fields as a side effect.  In this case
+// Evaluator can be used as a visitor of fields with tags for which it have
+// registered interpreters.  It will invoke registered interpreter for field
+// with corresponded tag.  Interpreter can then manipulate it's own state or
+// el.Context.  For example, it can store processing results into context's
+// Extra field.
 //
 // See NewEvaluator() for additional information.
 func NewNonmutatingEvaluator(
@@ -105,12 +114,31 @@ type evaluator struct {
 	options      Options
 }
 
+// Options is an options to create Evaluator.
 type Options struct {
-	NonMutating   bool
+
+	// NonMutating creates non-mutating Evaluator, see NewNonmutatingEvaluator.
+	NonMutating bool
+
+	// EvalEmptyTags causes Evaluator to invoke Interpreter for fields with
+	// empty tags.
 	EvalEmptyTags bool
 }
 
 func (ev evaluator) Eval(s, extra interface{}) error {
+	v := reflect.ValueOf(s)
+	t := v.Type()
+	k := t.Kind()
+	for v.IsValid() && (k == reflect.Interface || k == reflect.Ptr) {
+		v = v.Elem()
+		if v.IsValid() {
+			t = v.Type()
+			k = t.Kind()
+		}
+	}
+	if k != reflect.Struct || !v.CanSet() {
+		return fmt.Errorf("structor: %T: not a settable struct", s)
+	}
 	return multierror.Prefix(
 		ev.eval(
 			"",
@@ -120,6 +148,7 @@ func (ev evaluator) Eval(s, extra interface{}) error {
 				Struct:   s,
 				Extra:    extra,
 				EvalExpr: ev.evalExpr,
+				LongName: fmt.Sprintf("%T", s),
 			}), "structor:")
 }
 
@@ -138,11 +167,14 @@ func (ev evaluator) eval(
 	interpreter el.Interpreter,
 	v reflect.Value,
 	ctx *el.Context) (err error) {
+	// Note: only errors returned by recursive call should not be prefixed.
 	defer func() {
 		if r := recover(); r != nil {
 			var ok bool
 			if err, ok = r.(error); !ok {
-				err = fmt.Errorf("%v", r)
+				err = multierror.Prefix(
+					fmt.Errorf("%v", r),
+					fmt.Sprintf("<<%s>>", ctx.LongName))
 			}
 		}
 	}()
@@ -151,37 +183,43 @@ func (ev evaluator) eval(
 	}
 	t := v.Type()
 	k := t.Kind()
+	if v.CanAddr() && !v.CanSet() {
+		// https://stackoverflow.com/a/43918797/2063744
+		v = reflect.NewAt(t, unsafe.Pointer(v.UnsafeAddr())).Elem()
+	}
 	elV, elT, elK := v, t, k
-	switch k {
-	case reflect.Interface, reflect.Ptr:
+	for elV.IsValid() && (elK == reflect.Interface || elK == reflect.Ptr) {
 		elV = v.Elem()
 		if elV.IsValid() {
+			if elV.CanAddr() && !elV.CanSet() {
+				// https://stackoverflow.com/a/43918797/2063744
+				elV = reflect.NewAt(elT, unsafe.Pointer(elV.UnsafeAddr())).Elem()
+			}
 			elT = elV.Type()
 			elK = elT.Kind()
 		}
 	}
 	var merr *multierror.Error
 	var ctxSub interface{}
-	if expr != "" || ev.options.EvalEmptyTags {
+	if (expr != "" || ev.options.EvalEmptyTags) && interpreter != nil {
 		ctx.Val = nil
 		if elV.IsValid() {
 			ctx.Val = elV.Interface()
 		}
 		if result, err := interpreter.Execute(expr, ctx); err != nil {
-			merr = multierror.Append(merr, err)
+			merr = multierror.Append(
+				merr,
+				multierror.Prefix(err, fmt.Sprintf("<<%s>>", ctx.LongName)))
 		} else {
 			ctxSub = result
 			if !ev.options.NonMutating {
-				nv := result
-				if nv == nil {
+				if result == nil {
 					if v.IsValid() {
 						v.Set(reflect.Zero(t))
 					}
 				} else {
-					vnv := reflect.ValueOf(nv)
-					if !vnv.Type().ConvertibleTo(t) &&
-						elK == reflect.Struct {
-					} else {
+					vnv := reflect.ValueOf(result)
+					if vnv.Type().ConvertibleTo(t) || elK != reflect.Struct {
 						// Try to convert, it may give a panic with suitable
 						// message.
 						v.Set(vnv.Convert(t))
@@ -192,18 +230,28 @@ func (ev evaluator) eval(
 	}
 	switch elK {
 	case reflect.Slice, reflect.Array:
+		prevLongName := ctx.LongName
 		for i, l := 0, elV.Len(); i < l; i++ {
+			v := elV.Index(i)
+			ctx.Name = v.Type().Name()
 			ctx.LongName = fmt.Sprintf("%s[%d]", ctx.LongName, i)
 			ctx.Tags = nil
-			v := elV.Index(i)
 			err := ev.eval("", nil, v, ctx)
+			ctx.LongName = prevLongName
 			merr = multierror.Append(merr, err)
 		}
 	case reflect.Struct:
 		ctx.Sub = ctxSub
+		prevLongName := ctx.LongName
 		for i, l := 0, elV.NumField(); i < l; i++ {
 			tf := elT.Field(i)
 			tags, err := ev.scanner.Tags(tf.Tag)
+			if err != nil {
+				merr = multierror.Append(
+					merr,
+					multierror.Prefix(err, fmt.Sprintf("<<%s>>", ctx.LongName)))
+				break
+			}
 			expr := ""
 			var interpreter el.Interpreter
 			for k, t := range tags {
@@ -217,13 +265,24 @@ func (ev evaluator) eval(
 				expr, interpreter = string(tf.Tag), i
 			}
 			ctx.Name = tf.Name
-			ctx.LongName = fmt.Sprintf("%s.%s", t, tf.Name)
+			ctx.LongName = fmt.Sprintf("%s.%s", ctx.LongName, tf.Name)
 			ctx.Tags = tags
 			v := elV.Field(i)
 			err = ev.eval(expr, interpreter, v, ctx)
+			ctx.LongName = prevLongName
 			merr = multierror.Append(merr, err)
 		}
 	}
-	return multierror.Prefix(
-		merr.ErrorOrNil(), fmt.Sprintf("<<%s>>:", ctx.LongName))
+	return merr.ErrorOrNil()
+}
+
+// AddressableCopy returns a pointer to the addressable copy of the struct.
+func AddressableCopy(s interface{}) interface{} {
+	v := reflect.ValueOf(s)
+	if v.CanSet() {
+		return v.Interface()
+	}
+	s2 := reflect.New(v.Type())
+	s2.Elem().Set(v)
+	return s2.Interface()
 }

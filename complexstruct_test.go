@@ -6,6 +6,8 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/nikolay-turpitko/structor"
+	"github.com/nikolay-turpitko/structor/el"
+	"github.com/nikolay-turpitko/structor/scanner"
 )
 
 func TestArrayAndSlice(t *testing.T) {
@@ -28,15 +30,15 @@ func TestArrayAndSlice(t *testing.T) {
 	}
 	v := &T{
 		C: &Inner{},
-		D: []Inner{Inner{}, Inner{}},
-		E: []*Inner{&Inner{}, &Inner{}},
-		F: &[]Inner{Inner{}, Inner{}},
-		G: &[]*Inner{&Inner{}, &Inner{}},
-		H: [2]Inner{Inner{}, Inner{}},
-		I: [2]*Inner{&Inner{}, &Inner{}},
-		J: &[2]Inner{Inner{}, Inner{}},
-		K: &[2]*Inner{&Inner{}, &Inner{}},
-		L: [][]Inner{[]Inner{Inner{}, Inner{}}, []Inner{Inner{}, Inner{}}},
+		D: []Inner{{}, {}},
+		E: []*Inner{{}, {}},
+		F: &[]Inner{{}, {}},
+		G: &[]*Inner{{}, {}},
+		H: [2]Inner{{}, {}},
+		I: [2]*Inner{{}, {}},
+		J: &[2]Inner{{}, {}},
+		K: &[2]*Inner{{}, {}},
+		L: [][]Inner{{{}, {}}, {{}, {}}},
 	}
 	ev := structor.NewDefaultEvaluator(nil)
 	err := ev.Eval(v, nil)
@@ -80,4 +82,51 @@ func TestUnexportedFields(t *testing.T) {
 	assert.Equal(t, "bbb", v.b)
 }
 
-//TODO: test unaddressable struct
+func TestEmptyTagsAndLongName(t *testing.T) {
+	type T struct {
+		A string
+		S struct {
+			B []struct {
+				C, d string
+			}
+		}
+	}
+	v := &T{"", struct{ B []struct{ C, d string } }{[]struct{ C, d string }{{}, {}}}}
+	ev := structor.NewEvaluatorWithOptions(
+		scanner.Default,
+		structor.Interpreters{
+			structor.WholeTag: el.InterpreterFunc(func(s string, ctx *el.Context) (interface{}, error) {
+				s, ok := ctx.Val.(string)
+				if !ok {
+					return ctx.Val, nil
+				}
+				return ctx.LongName, nil
+			}),
+		},
+		structor.Options{EvalEmptyTags: true})
+	err := ev.Eval(v, nil)
+	assert.NoError(t, err)
+	assert.Equal(t, "*structor_test.T.A", v.A)
+	assert.Equal(t, "*structor_test.T.S.B[0].C", v.S.B[0].C)
+	assert.Equal(t, "*structor_test.T.S.B[1].d", v.S.B[1].d)
+}
+
+func TestAddressableCopy(t *testing.T) {
+	type Inner struct {
+		a string `eval:"aaa"`
+	}
+	type T struct {
+		b string `eval:"bbb"`
+		c Inner
+	}
+	v := T{c: Inner{}}
+	c := structor.AddressableCopy(v)
+	ev := structor.NewDefaultEvaluator(nil)
+	err := ev.Eval(c, nil)
+	assert.NoError(t, err)
+	assert.NotEqual(t, "aaa", v.c.a)
+	assert.NotEqual(t, "bbb", v.b)
+	cv := c.(*T)
+	assert.Equal(t, "aaa", cv.c.a)
+	assert.Equal(t, "bbb", cv.b)
+}
