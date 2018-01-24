@@ -90,8 +90,17 @@ func TestEmptyTagsAndLongName(t *testing.T) {
 				C, d string
 			}
 		}
+		e map[int]*struct{ f string }
 	}
-	v := &T{"", struct{ B []struct{ C, d string } }{[]struct{ C, d string }{{}, {}}}}
+	v := &T{
+		"",
+		struct {
+			B []struct{ C, d string }
+		}{
+			[]struct{ C, d string }{{}, {}},
+		},
+		map[int]*struct{ f string }{42: {"xxx"}},
+	}
 	ev := structor.NewEvaluatorWithOptions(
 		scanner.Default,
 		structor.Interpreters{
@@ -109,6 +118,7 @@ func TestEmptyTagsAndLongName(t *testing.T) {
 	assert.Equal(t, "*structor_test.T.A", v.A)
 	assert.Equal(t, "*structor_test.T.S.B[0].C", v.S.B[0].C)
 	assert.Equal(t, "*structor_test.T.S.B[1].d", v.S.B[1].d)
+	assert.Equal(t, "*structor_test.T.e[42].f", v.e[42].f)
 }
 
 func TestAddressableCopy(t *testing.T) {
@@ -120,7 +130,9 @@ func TestAddressableCopy(t *testing.T) {
 		c Inner
 	}
 	ev := structor.NewDefaultEvaluator(nil)
-	v1 := T{c: Inner{}}
+	v1 := T{
+		c: Inner{},
+	}
 	c1 := structor.AddressableCopy(v1)
 	err := ev.Eval(c1, nil)
 	assert.NoError(t, err)
@@ -132,6 +144,48 @@ func TestAddressableCopy(t *testing.T) {
 
 	v2 := &T{c: Inner{}}
 	c2 := structor.AddressableCopy(v2)
+	err = ev.Eval(c2, nil)
+	assert.NoError(t, err)
+	assert.NotEqual(t, "aaa", v2.c.a)
+	assert.NotEqual(t, "bbb", v2.b)
+	cv2 := c2.(*T)
+	assert.Equal(t, "aaa", cv2.c.a)
+	assert.Equal(t, "bbb", cv2.b)
+}
+
+func TestDeepCopy(t *testing.T) {
+	type Inner struct {
+		a string `eval:"aaa"`
+	}
+	type T struct {
+		b string `eval:"bbb"`
+		c Inner
+		d []Inner
+		e map[int]*Inner
+	}
+	ev := structor.NewDefaultEvaluator(nil)
+	v1 := T{
+		c: Inner{},
+		d: []Inner{{}, {}},
+		e: map[int]*Inner{42: &Inner{}},
+	}
+	c1 := structor.DeepCopy(v1)
+	err := ev.Eval(c1, nil)
+	assert.NoError(t, err)
+	assert.NotEqual(t, "aaa", v1.c.a)
+	assert.NotEqual(t, "bbb", v1.b)
+	assert.NotEqual(t, "aaa", v1.d[0].a)
+	assert.NotEqual(t, "aaa", v1.d[1].a)
+	assert.NotEqual(t, "aaa", v1.e[42].a)
+	cv1 := c1.(*T)
+	assert.Equal(t, "aaa", cv1.c.a)
+	assert.Equal(t, "bbb", cv1.b)
+	assert.Equal(t, "aaa", cv1.d[0].a)
+	assert.Equal(t, "aaa", cv1.d[1].a)
+	assert.Equal(t, "aaa", cv1.e[42].a)
+
+	v2 := &T{c: Inner{}}
+	c2 := structor.DeepCopy(v2)
 	err = ev.Eval(c2, nil)
 	assert.NoError(t, err)
 	assert.NotEqual(t, "aaa", v2.c.a)

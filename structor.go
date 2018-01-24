@@ -285,6 +285,17 @@ func (ev evaluator) eval(
 			ctx.LongName = prevLongName
 			merr = multierror.Append(merr, err)
 		}
+	case reflect.Map:
+		prevLongName := ctx.LongName
+		for _, key := range elV.MapKeys() {
+			v := elV.MapIndex(key)
+			ctx.Name = v.Type().Name()
+			ctx.LongName = fmt.Sprintf("%s[%v]", ctx.LongName, key)
+			ctx.Tags = nil
+			err := ev.eval("", nil, v, ctx)
+			ctx.LongName = prevLongName
+			merr = multierror.Append(merr, err)
+		}
 	}
 	return merr.ErrorOrNil()
 }
@@ -295,4 +306,40 @@ func AddressableCopy(s interface{}) interface{} {
 	s2 := reflect.New(v.Type())
 	s2.Elem().Set(v)
 	return s2.Interface()
+}
+
+// DeepCopy returns a pointer to the deep copy of the struct.
+// FIXME: not fully implemented, just a first lame draft.
+func DeepCopy(s interface{}) interface{} {
+	c := AddressableCopy(s)
+	ev := NewEvaluatorWithOptions(
+		scanner.Default,
+		Interpreters{
+			WholeTag: el.InterpreterFunc(func(s string, ctx *el.Context) (interface{}, error) {
+				v := reflect.ValueOf(ctx.Val)
+				t, k := v.Type(), v.Kind()
+				switch k {
+				case reflect.Slice:
+					cp := reflect.MakeSlice(t, v.Len(), v.Cap())
+					reflect.Copy(cp, v)
+					return cp.Interface(), nil
+				case reflect.Map:
+					cp := reflect.MakeMapWithSize(t, v.Len())
+					for _, key := range v.MapKeys() {
+						v := reflect.Indirect(v.MapIndex(key))
+						v2 := reflect.New(v.Type())
+						v2.Elem().Set(v)
+						cp.SetMapIndex(key, v2)
+					}
+					return cp.Interface(), nil
+				}
+				return ctx.Val, nil
+			}),
+		},
+		Options{EvalEmptyTags: true})
+	err := ev.Eval(c, nil)
+	if err != nil {
+		panic(err)
+	}
+	return c
 }
