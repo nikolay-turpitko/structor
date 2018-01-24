@@ -93,8 +93,6 @@ func NewDefaultEvaluator(funcs use.FuncMap) Evaluator {
 // Though, interpreters can change structures' fields as a side effect.
 //
 // See NewEvaluator() for additional information.
-//
-// BUG: does not visit embedded structs.
 func NewNonmutatingEvaluator(
 	scanner scanner.Scanner,
 	interpreters Interpreters) Evaluator {
@@ -113,7 +111,16 @@ type Options struct {
 }
 
 func (ev evaluator) Eval(s, extra interface{}) error {
-	return ev.eval(s, extra, nil, nil)
+	return multierror.Prefix(
+		ev.eval(
+			"",
+			nil,
+			reflect.ValueOf(s),
+			&el.Context{
+				Struct:   s,
+				Extra:    extra,
+				EvalExpr: ev.evalExpr,
+			}), "structor:")
 }
 
 func (ev evaluator) evalExpr(
@@ -126,154 +133,97 @@ func (ev evaluator) evalExpr(
 	return intrpr.Execute(expr, ctx)
 }
 
-func (ev evaluator) eval(s, extra, substruct, subctx interface{}) error {
-	curr := s
-	if substruct != nil {
-		curr = substruct
-	}
-	val, typ, err := ev.structIntrospect(curr)
-	if err != nil {
-		return err
-	}
-	var merr error
-	for i, l := 0, typ.NumField(); i < l; i++ {
-		err := func() error {
-			f, err := ev.fieldIntrospect(val, typ, i)
-			longName := fmt.Sprintf("%T.%s", curr, f.name)
-			if err != nil {
-				return fmt.Errorf("structor: <<%s>>: %v", longName, err)
-			}
-			if !f.value.IsValid() || !f.settable {
-				return nil
-			}
-			var result interface{}
-			if f.expr != "" || ev.options.EvalEmptyTags {
-				ctx := &el.Context{
-					Name:     f.name,
-					LongName: longName,
-					Tags:     f.tags,
-					Struct:   s,
-					Extra:    extra,
-					Sub:      subctx,
-					EvalExpr: ev.evalExpr,
-					Val:      f.value.Interface(),
-				}
-				result, err = f.interpreter.Execute(f.expr, ctx)
-				if err != nil {
-					return err
-				}
-				if !ev.options.NonMutating && f.settable {
-					err := reflectSet(f.value, f.typ, result)
-					if err != nil {
-						return fmt.Errorf("structor: <<%s>>: %v", longName, err)
-					}
-				}
-			}
-			v := f.value
-			k := v.Kind()
-			if k == reflect.Interface {
-				v = v.Elem()
-				k = reflect.Indirect(v).Kind()
-			}
-			if k == reflect.Struct {
-				// process embedded struct with tag
-				return ev.eval(s, extra, byRef(v), result)
-			}
-			return nil
-		}()
-		if err != nil {
-			merr = multierror.Append(merr, err)
-		}
-	}
-	return merr
-}
-
-func (ev evaluator) structIntrospect(
-	s interface{}) (reflect.Value, reflect.Type, error) {
-	v := reflect.Indirect(reflect.ValueOf(s))
-	t := v.Type()
-	if t.Kind() != reflect.Struct {
-		err := fmt.Errorf(
-			"structor: %v must be a struct or a pointer to struct, actually: %v",
-			s,
-			t.Kind())
-		return v, t, err
-	}
-	return v, t, nil
-}
-
-type fieldDescr struct {
-	name        string
-	expr        string
-	interpreter el.Interpreter
-	value       reflect.Value
-	typ         reflect.Type
-	tags        map[string]string
-	settable    bool
-}
-
-func (ev evaluator) fieldIntrospect(
-	val reflect.Value,
-	typ reflect.Type,
-	i int) (fieldDescr, error) {
-	f := typ.Field(i)
-	v := reflect.Indirect(val.Field(i))
-	tags, err := ev.scanner.Tags(f.Tag)
-	res := fieldDescr{
-		name:  f.Name,
-		value: v,
-		typ:   f.Type,
-		tags:  tags,
-	}
-	if err != nil {
-		return res, err
-	}
-	res.settable = v.CanSet() || (v.CanAddr() && v.Addr().CanSet())
-	for k, t := range tags {
-		if intr, ok := ev.interpreters[k]; ok {
-			delete(tags, k)
-			res.expr = t
-			res.interpreter = intr
-			return res, nil
-		}
-	}
-	if intr, ok := ev.interpreters[WholeTag]; ok {
-		delete(tags, WholeTag)
-		res.expr = string(f.Tag)
-		res.interpreter = intr
-		return res, nil
-	}
-	return res, nil
-}
-
-func reflectSet(v reflect.Value, vt reflect.Type, nv interface{}) (err error) {
+func (ev evaluator) eval(
+	expr string,
+	interpreter el.Interpreter,
+	v reflect.Value,
+	ctx *el.Context) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			var ok bool
 			if err, ok = r.(error); !ok {
-				err = fmt.Errorf("structor: %v", r)
+				err = fmt.Errorf("%v", r)
 			}
 		}
 	}()
-	if nv == nil {
-		if v.IsValid() {
-			v.Set(reflect.Zero(vt))
+	if !v.IsValid() {
+		return nil
+	}
+	t := v.Type()
+	k := t.Kind()
+	elV, elT, elK := v, t, k
+	switch k {
+	case reflect.Interface, reflect.Ptr:
+		elV = v.Elem()
+		if elV.IsValid() {
+			elT = elV.Type()
+			elK = elT.Kind()
 		}
-		return nil
 	}
-	vnv := reflect.ValueOf(nv)
-	if !vnv.Type().ConvertibleTo(vt) &&
-		v.Kind() == reflect.Struct {
-		return nil
+	var merr *multierror.Error
+	var ctxSub interface{}
+	if expr != "" || ev.options.EvalEmptyTags {
+		ctx.Val = nil
+		if elV.IsValid() {
+			ctx.Val = elV.Interface()
+		}
+		if result, err := interpreter.Execute(expr, ctx); err != nil {
+			merr = multierror.Append(merr, err)
+		} else {
+			ctxSub = result
+			if !ev.options.NonMutating {
+				nv := result
+				if nv == nil {
+					if v.IsValid() {
+						v.Set(reflect.Zero(t))
+					}
+				} else {
+					vnv := reflect.ValueOf(nv)
+					if !vnv.Type().ConvertibleTo(t) &&
+						elK == reflect.Struct {
+					} else {
+						// Try to convert, it may give a panic with suitable
+						// message.
+						v.Set(vnv.Convert(t))
+					}
+				}
+			}
+		}
 	}
-	// Try to convert, it may give a panic with suitable message.
-	v.Set(vnv.Convert(vt))
-	return nil
-}
-
-func byRef(v reflect.Value) interface{} {
-	if v.CanAddr() {
-		v = v.Addr()
+	switch elK {
+	case reflect.Slice, reflect.Array:
+		for i, l := 0, elV.Len(); i < l; i++ {
+			ctx.LongName = fmt.Sprintf("%s[%d]", ctx.LongName, i)
+			ctx.Tags = nil
+			v := elV.Index(i)
+			err := ev.eval("", nil, v, ctx)
+			merr = multierror.Append(merr, err)
+		}
+	case reflect.Struct:
+		ctx.Sub = ctxSub
+		for i, l := 0, elV.NumField(); i < l; i++ {
+			tf := elT.Field(i)
+			tags, err := ev.scanner.Tags(tf.Tag)
+			expr := ""
+			var interpreter el.Interpreter
+			for k, t := range tags {
+				if i, ok := ev.interpreters[k]; ok {
+					delete(tags, k)
+					expr, interpreter = t, i
+				}
+			}
+			if i, ok := ev.interpreters[WholeTag]; ok {
+				delete(tags, WholeTag)
+				expr, interpreter = string(tf.Tag), i
+			}
+			ctx.Name = tf.Name
+			ctx.LongName = fmt.Sprintf("%s.%s", t, tf.Name)
+			ctx.Tags = tags
+			v := elV.Field(i)
+			err = ev.eval(expr, interpreter, v, ctx)
+			merr = multierror.Append(merr, err)
+		}
 	}
-	return v.Interface()
+	return multierror.Prefix(
+		merr.ErrorOrNil(), fmt.Sprintf("<<%s>>:", ctx.LongName))
 }

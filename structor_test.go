@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/nikolay-turpitko/structor"
 	"github.com/nikolay-turpitko/structor/el"
@@ -115,19 +116,14 @@ func TestObj(t *testing.T) {
 func TestError(t *testing.T) {
 	ev := structor.NewDefaultEvaluator(nil)
 
-	// Error for wrong type.
-	err := ev.Eval(42, nil)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "must be a struct")
-
 	// Error in template contains template name, which consists of struct's
 	// type and field name.
 	type errStruct struct {
 		A string `eval:"{{error}}"`
 	}
 	v := &errStruct{}
-	err = ev.Eval(v, nil)
-	assert.Error(t, err)
+	err := ev.Eval(v, nil)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "<<*structor_test.errStruct.A>>")
 
 	// Error during type conversion contains template name.
@@ -136,7 +132,7 @@ func TestError(t *testing.T) {
 	}
 	v2 := &errStruct2{}
 	err = ev.Eval(v2, nil)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "<<*structor_test.errStruct2.A>>")
 }
 
