@@ -260,7 +260,7 @@ func (ev evaluator) eval(
 					expr, interpreter = t, i
 				}
 			}
-			if i, ok := ev.interpreters[WholeTag]; ok {
+			if i, ok := ev.interpreters[WholeTag]; ok && interpreter == nil {
 				delete(tags, WholeTag)
 				expr, interpreter = string(tf.Tag), i
 			}
