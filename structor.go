@@ -129,11 +129,16 @@ func (ev evaluator) Eval(s, extra interface{}) error {
 	v := reflect.ValueOf(s)
 	t := v.Type()
 	k := t.Kind()
+	prev := v
 	for v.IsValid() && (k == reflect.Interface || k == reflect.Ptr) {
+		prev = v
 		v = v.Elem()
 		if v.IsValid() {
 			t = v.Type()
 			k = t.Kind()
+		}
+		if prev == v {
+			break
 		}
 	}
 	if k != reflect.Struct || !v.CanSet() {
@@ -189,15 +194,23 @@ func (ev evaluator) eval(
 	}
 	elV, elT, elK := v, t, k
 	for elV.IsValid() && (elK == reflect.Interface || elK == reflect.Ptr) {
+		v, t, k = elV, elT, elK
 		elV = v.Elem()
 		if elV.IsValid() {
-			if elV.CanAddr() && !elV.CanSet() {
-				// https://stackoverflow.com/a/43918797/2063744
-				elV = reflect.NewAt(elT, unsafe.Pointer(elV.UnsafeAddr())).Elem()
-			}
 			elT = elV.Type()
 			elK = elT.Kind()
 		}
+		if v == elV {
+			break
+		}
+	}
+	if elV.IsValid() {
+		if elV.CanAddr() && !elV.CanSet() {
+			// https://stackoverflow.com/a/43918797/2063744
+			elV = reflect.NewAt(elT, unsafe.Pointer(elV.UnsafeAddr())).Elem()
+		}
+		elT = elV.Type()
+		elK = elT.Kind()
 	}
 	var merr *multierror.Error
 	var ctxSub interface{}
