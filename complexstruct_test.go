@@ -119,14 +119,24 @@ func TestAddressableCopy(t *testing.T) {
 		b string `eval:"bbb"`
 		c Inner
 	}
-	v := T{c: Inner{}}
-	c := structor.AddressableCopy(v)
 	ev := structor.NewDefaultEvaluator(nil)
-	err := ev.Eval(c, nil)
+	v1 := T{c: Inner{}}
+	c1 := structor.AddressableCopy(v1)
+	err := ev.Eval(c1, nil)
 	assert.NoError(t, err)
-	assert.NotEqual(t, "aaa", v.c.a)
-	assert.NotEqual(t, "bbb", v.b)
-	cv := c.(*T)
-	assert.Equal(t, "aaa", cv.c.a)
-	assert.Equal(t, "bbb", cv.b)
+	assert.NotEqual(t, "aaa", v1.c.a)
+	assert.NotEqual(t, "bbb", v1.b)
+	cv1 := c1.(*T)
+	assert.Equal(t, "aaa", cv1.c.a)
+	assert.Equal(t, "bbb", cv1.b)
+
+	v2 := &T{c: Inner{}}
+	c2 := structor.AddressableCopy(v2)
+	err = ev.Eval(c2, nil)
+	assert.NoError(t, err)
+	assert.NotEqual(t, "aaa", v2.c.a)
+	assert.NotEqual(t, "bbb", v2.b)
+	cv2 := c2.(*T)
+	assert.Equal(t, "aaa", cv2.c.a)
+	assert.Equal(t, "bbb", cv2.b)
 }

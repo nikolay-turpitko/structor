@@ -278,10 +278,7 @@ func (ev evaluator) eval(
 
 // AddressableCopy returns a pointer to the addressable copy of the struct.
 func AddressableCopy(s interface{}) interface{} {
-	v := reflect.ValueOf(s)
-	if v.CanSet() {
-		return v.Interface()
-	}
+	v := reflect.Indirect(reflect.ValueOf(s))
 	s2 := reflect.New(v.Type())
 	s2.Elem().Set(v)
 	return s2.Interface()
