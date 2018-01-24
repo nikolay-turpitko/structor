@@ -324,7 +324,7 @@ func DeepCopy(s interface{}) interface{} {
 					reflect.Copy(cp, v)
 					return cp.Interface(), nil
 				case reflect.Map:
-					cp := reflect.MakeMapWithSize(t, v.Len())
+					cp := reflect.MakeMap(t)
 					for _, key := range v.MapKeys() {
 						v := reflect.Indirect(v.MapIndex(key))
 						v2 := reflect.New(v.Type())
