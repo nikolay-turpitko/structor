@@ -317,6 +317,9 @@ func DeepCopy(s interface{}) interface{} {
 		Interpreters{
 			WholeTag: el.InterpreterFunc(func(s string, ctx *el.Context) (interface{}, error) {
 				v := reflect.ValueOf(ctx.Val)
+				if !v.IsValid() {
+					return ctx.Val, nil
+				}
 				t, k := v.Type(), v.Kind()
 				switch k {
 				case reflect.Slice:
@@ -327,9 +330,11 @@ func DeepCopy(s interface{}) interface{} {
 					cp := reflect.MakeMap(t)
 					for _, key := range v.MapKeys() {
 						v := reflect.Indirect(v.MapIndex(key))
-						v2 := reflect.New(v.Type())
-						v2.Elem().Set(v)
-						cp.SetMapIndex(key, v2)
+						if v.IsValid() {
+							v2 := reflect.New(v.Type())
+							v2.Elem().Set(v)
+							cp.SetMapIndex(key, v2)
+						}
 					}
 					return cp.Interface(), nil
 				}
