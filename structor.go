@@ -18,7 +18,6 @@ package structor
 import (
 	"fmt"
 	"reflect"
-	"unsafe"
 
 	multierror "github.com/hashicorp/go-multierror"
 
@@ -188,10 +187,7 @@ func (ev evaluator) eval(
 	}
 	t := v.Type()
 	k := t.Kind()
-	if v.CanAddr() && !v.CanSet() {
-		// https://stackoverflow.com/a/43918797/2063744
-		v = reflect.NewAt(t, unsafe.Pointer(v.UnsafeAddr())).Elem()
-	}
+	v = tryUnseal(v)
 	elV, elT, elK := v, t, k
 	for elV.IsValid() && (elK == reflect.Interface || elK == reflect.Ptr) {
 		v, t, k = elV, elT, elK
@@ -205,10 +201,7 @@ func (ev evaluator) eval(
 		}
 	}
 	if elV.IsValid() {
-		if elV.CanAddr() && !elV.CanSet() {
-			// https://stackoverflow.com/a/43918797/2063744
-			elV = reflect.NewAt(elT, unsafe.Pointer(elV.UnsafeAddr())).Elem()
-		}
+		elV = tryUnseal(elV)
 		elT = elV.Type()
 		elK = elT.Kind()
 	}
