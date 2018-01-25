@@ -6,6 +6,7 @@ import:
 - package: github.com/hashicorp/go-multierror
 - package: gopkg.in/xmlpath.v2
 - package: github.com/apaxa-go/eval
+- package: github.com/mohae/deepcopy
 testImport:
 - package: github.com/stretchr/testify
   version: ^1.1.4

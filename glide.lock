@@ -1,5 +1,5 @@
-hash: 82c3f302cd288e4593326bd4a31468b68e4af2c3aa2ee7563509a240d6c54a4e
-updated: 2018-01-17T01:20:13.704337+07:00
+hash: 37ecb7575b5a6cd084e3e64e527577e0d46e8c160205c9ecd1c9c2fdb2964d5f
+updated: 2018-01-25T12:11:32.078000328+07:00
 imports:
 - name: github.com/andybalholm/cascadia
   version: 349dd0209470eabd9514242c688c403c0926d266
@@ -22,6 +22,8 @@ imports:
   version: 7554cd9344cec97297fa6649b055a8c98c2a1e55
 - name: github.com/hashicorp/go-multierror
   version: b7773ae218740a7be65057fc60b366a49b538a44
+- name: github.com/mohae/deepcopy
+  version: c48cc78d482608239f6c4c92a4abd87eb8761c90
 - name: github.com/PuerkitoBio/goquery
   version: a41cf096e64e3752d7683898d5746bc0b98ee213
 - name: golang.org/x/crypto
@@ -54,3 +56,4 @@ testImports:
   version: b91bfb9ebec76498946beb6af7c0230c7cc7ba6c
   subpackages:
   - assert
+  - require
