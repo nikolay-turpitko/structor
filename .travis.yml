@@ -1,8 +1,9 @@
 language: go
 go:
-    - 1.7.x
-    - 1.8.x
-    - tip
+    - "1.7.x"
+    - "1.8.x"
+    - "1.10.x"
+    - master
 sudo: required
 before_install:
     - sudo add-apt-repository -y ppa:masterminds/glide
