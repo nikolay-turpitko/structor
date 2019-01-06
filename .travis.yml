@@ -1,7 +1,6 @@
 language: go
 go:
-    - "1.7.x"
-    - "1.8.x"
+    - "1.9.x"
     - "1.10.x"
     - master
 sudo: required
@@ -11,7 +10,7 @@ before_install:
     - sudo apt-get -y install glide
 install:
     - glide i
-    # - go get -u golang.org/x/lint/golint
+    - go get -u golang.org/x/lint/golint
     - go get -u github.com/modocache/gover
 script:
     - find . -type d -name vendor -prune -o -type f -name "*.go" -print | xargs go tool vet -structtags=false
