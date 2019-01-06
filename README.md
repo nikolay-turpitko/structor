@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/nikolay-turpitko/structor.svg?branch=master)](https://travis-ci.org/nikolay-turpitko/structor)
+[![Build Status](https://travis-ci.com/nikolay-turpitko/structor.svg?branch=master)](https://travis-ci.com/nikolay-turpitko/structor)
 [![Software License](https://img.shields.io/badge/License-MIT-orange.svg?style=flat-square)](https://github.com/nikolay-turpitko/structor/blob/master/LICENSE)
 [![GoDoc](https://img.shields.io/badge/godoc-reference-blue.svg?style=flat-square)](https://godoc.org/github.com/nikolay-turpitko/structor)
 [![codecov](https://codecov.io/gh/nikolay-turpitko/structor/branch/master/graph/badge.svg)](https://codecov.io/gh/nikolay-turpitko/structor)
